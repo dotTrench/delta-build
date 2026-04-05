@@ -1,4 +1,6 @@
-﻿using DeltaBuild.Cli.Commands;
+﻿using System.Diagnostics;
+
+using DeltaBuild.Cli.Commands;
 using DeltaBuild.Cli.Core;
 
 using Microsoft.Build.Locator;
@@ -15,13 +17,29 @@ app.Configure(c =>
     c.Settings.Registrar.RegisterInstance<IStandardOutput>(new ConsoleStandardOutput());
     c.ConfigureConsole(AnsiConsole.Create(new AnsiConsoleSettings
     {
-        Out = new AnsiConsoleOutput(Console.Error),
-        Interactive = InteractionSupport.Detect
+        Out = new AnsiConsoleOutput(Console.Error), Interactive = InteractionSupport.Detect
     }));
 
+    c.SetApplicationName("delta-build");
+    c.UseAssemblyInformationalVersion();
 
-    c.AddCommand<SnapshotCommand>("snapshot");
-    c.AddCommand<DiffCommand>("diff");
+#if DEBUG
+    c.ValidateExamples();
+#endif
+
+    c.AddCommand<SnapshotCommand>("snapshot")
+        .WithDescription("Pre-compute a snapshot")
+        .WithExample("snapshot", "--commit", "HEAD")
+        .WithExample("snapshot", "--commit", "HEAD~1")
+        .WithExample("snapshot", "--commit", "develop");
+
+    c.AddCommand<DiffCommand>("diff")
+        .WithDescription(
+            "Compare two snapshots and output any projects that might have changed or is affected by changes"
+        )
+        .WithExample("diff", "--base", "develop")
+        .WithExample("diff", "--base", "main", "--output", "/tmp/affected.slnx")
+        .WithExample("diff", "--base", "main-snapshot.json");
 });
 
 
