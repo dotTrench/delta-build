@@ -1,11 +1,12 @@
 using DeltaBuild.Cli;
 using DeltaBuild.Cli.Core;
+
 using Spectre.Console.Cli;
 using Spectre.Console.Cli.Testing;
 
 namespace DeltaBuild.Tests;
 
-public class DiffCommandTests : IDisposable
+public sealed class DiffCommandTests : IDisposable
 {
     private readonly TestRepository _repo;
 
@@ -49,7 +50,8 @@ public class DiffCommandTests : IDisposable
 
         await Assert.That(result.ExitCode).IsEqualTo(0);
         var lines = stdout.GetLines();
-        await Assert.That(lines).Contains("src/Core/Core.csproj");
+        var line = await Assert.That(lines).HasSingleItem();
+        await Assert.That(line).IsEqualTo("src/Core/Core.csproj");
     }
 
     [Test]
@@ -72,7 +74,10 @@ public class DiffCommandTests : IDisposable
             cancellationToken);
 
         await Assert.That(result.ExitCode).IsEqualTo(0);
-        var lines = stdout.GetLines();
+        var lines = stdout.GetLines().ToList();
+
+        await Assert.That(lines.Count).IsEqualTo(2);
+
         await Assert.That(lines).Contains("src/Core/Core.csproj");
         await Assert.That(lines).Contains("src/App/App.csproj");
     }
@@ -170,7 +175,8 @@ public class DiffCommandTests : IDisposable
 
         await Assert.That(result.ExitCode).IsEqualTo(0);
         var lines = stdout.GetLines();
-        await Assert.That(lines).Contains("src/App/App.csproj");
+        var line = await Assert.That(lines).HasSingleItem();
+        await Assert.That(line).IsEqualTo("src/App/App.csproj");
     }
 
     [Test]
