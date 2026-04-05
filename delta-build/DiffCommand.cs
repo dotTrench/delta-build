@@ -174,7 +174,7 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
             .ToList();
         if (settings.Pretty)
         {
-            DiffRenderer.Render(_console, settings.Detailed ? outputProjects : diff.Projects, settings.Detailed);
+            DiffRenderer.Render(_console, !settings.Detailed ? outputProjects : diff.Projects, settings.Detailed);
         }
 
         await using var output = settings.Output?.Create() ?? _stdout.OpenStream();

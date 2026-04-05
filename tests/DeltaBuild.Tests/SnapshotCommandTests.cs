@@ -1,6 +1,8 @@
 using System.Text;
+
 using DeltaBuild.Cli;
 using DeltaBuild.Cli.Core;
+
 using Spectre.Console.Cli.Testing;
 
 namespace DeltaBuild.Tests;
@@ -33,15 +35,17 @@ public class SnapshotCommandTests
         await VerifyJson(stdout.GetString())
             .ScrubMember("commit");
     }
-    
+
     [Test]
     public async Task WritesJsonToStandardOutput_WithTransitiveReferences(CancellationToken cancellationToken)
     {
         using var repo = TestRepository.Create();
         repo
             .CreateCsproj("src/Project1/Project1.csproj")
-            .CreateCsproj("src/Project2/Project2.csproj", x => x.AddItem("ProjectReference", @"..\Project1\Project1.csproj"))
-            .CreateCsproj("src/Project3/Project3.csproj", x => x.AddItem("ProjectReference", @"..\Project2\Project2.csproj"))
+            .CreateCsproj("src/Project2/Project2.csproj",
+                x => x.AddItem("ProjectReference", @"..\Project1\Project1.csproj"))
+            .CreateCsproj("src/Project3/Project3.csproj",
+                x => x.AddItem("ProjectReference", @"..\Project2\Project2.csproj"))
             .Commit("Initial commit");
 
         var stdout = new InMemoryStandardOutput();
@@ -153,9 +157,14 @@ public sealed class InMemoryStandardOutput : IStandardOutput
     public byte[] GetBytes() => _stream.ToArray();
     public string GetString() => Encoding.UTF8.GetString(GetBytes());
 
-    public string[] GetLines()
+    public IEnumerable<string> GetLines()
     {
-        return GetString().Split('\n');
+        using var reader = new StringReader(GetString());
+        string? line;
+        while ((line = reader.ReadLine()) != null)
+        {
+            yield return line;
+        }
     }
 
     public Stream OpenStream()
