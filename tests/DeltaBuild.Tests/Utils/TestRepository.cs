@@ -1,8 +1,9 @@
 using LibGit2Sharp;
+
 using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 
-namespace DeltaBuild.Tests;
+namespace DeltaBuild.Tests.Utils;
 
 public sealed class TestRepository : IDisposable
 {

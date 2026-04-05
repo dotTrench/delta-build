@@ -1,11 +1,16 @@
 using System.ComponentModel;
 using System.Diagnostics;
+
 using DeltaBuild.Cli.Core;
+using DeltaBuild.Cli.Core.Diff;
+using DeltaBuild.Cli.Core.Diff.Formatting;
 using DeltaBuild.Cli.Core.Git;
+using DeltaBuild.Cli.Core.Snapshots;
+
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace DeltaBuild.Cli;
+namespace DeltaBuild.Cli.Commands;
 
 public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
 {

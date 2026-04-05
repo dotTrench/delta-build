@@ -1,11 +1,13 @@
 using System.Collections.Concurrent;
+
 using DeltaBuild.Cli.Core.Git;
+
 using Microsoft.Build.Execution;
 using Microsoft.Build.Graph;
 using Microsoft.Build.Prediction;
 using Microsoft.Build.Prediction.Predictors;
 
-namespace DeltaBuild.Cli.Core;
+namespace DeltaBuild.Cli.Core.Snapshots;
 
 public static class SnapshotGenerator
 {
@@ -115,25 +117,38 @@ public static class SnapshotGenerator
                 .ToDictionary(it => PathHelpers.Normalize(Path.GetRelativePath(_worktree.WorkingDirectory, it.Key)),
                     it => new SnapshotProject
                     {
-                        InputFiles = it.Value.GetInputFiles().Order().Select(PathHelpers.Normalize).ToList(),
-                        ProjectReferences = it.Value.GetProjectReferences().Order().Select(PathHelpers.Normalize).ToList()
+                        InputFiles = it.Value.GetInputFiles()
+                            .Order()
+                            .Select(PathHelpers.Normalize)
+                            .ToList(),
+                        ProjectReferences = it.Value.GetProjectReferences()
+                            .Order()
+                            .Select(PathHelpers.Normalize)
+                            .ToList()
                     }
                 );
         }
 
         private sealed class ProjectCollector
         {
+            private readonly Lock _inputFilesLock = new();
             private readonly HashSet<string> _inputFiles = [];
             private readonly HashSet<string> _projectReferences = [];
 
             public void AddInputFile(string path)
             {
-                _inputFiles.Add(path);
+                lock (_inputFilesLock)
+                {
+                    _inputFiles.Add(path);
+                }
             }
 
             public IReadOnlyCollection<string> GetInputFiles()
             {
-                return _inputFiles;
+                lock (_inputFilesLock)
+                {
+                    return _inputFiles;
+                }
             }
 
             public IReadOnlyCollection<string> GetProjectReferences() => _projectReferences;

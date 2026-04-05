@@ -1,4 +1,4 @@
-namespace DeltaBuild.Cli.Core;
+namespace DeltaBuild.Cli.Core.Snapshots;
 
 public sealed record Snapshot
 {

@@ -1,4 +1,5 @@
 using DeltaBuild.Cli.Core;
+using DeltaBuild.Tests.Utils;
 
 namespace DeltaBuild.Tests;
 

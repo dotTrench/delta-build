@@ -1,7 +1,10 @@
-using System.Text;
-
 using DeltaBuild.Cli;
+using DeltaBuild.Cli.Commands;
 using DeltaBuild.Cli.Core;
+using DeltaBuild.Cli.Core.Snapshots;
+using DeltaBuild.Tests.Utils;
+
+using LibGit2Sharp;
 
 using Spectre.Console.Cli.Testing;
 
@@ -137,6 +140,50 @@ public class SnapshotCommandTests
         await Assert.That(result.ExitCode).IsEqualTo(1);
     }
 
+    [Test]
+    public async Task WritesJsonToStandardOutput_WithMultiTargetedProject(CancellationToken cancellationToken)
+    {
+        using var repo = TestRepository.Create();
+        Repository.Init(repo.WorkingDirectory);
+
+        repo
+            .CreateCsproj("src/Core/Core.csproj", x =>
+            {
+                x.AddProperty("TargetFrameworks", "net8.0;net9.0");
+            })
+            .CreateCsproj("src/App/App.csproj", x =>
+            {
+                x.AddProperty("TargetFramework", "net9.0");
+                x.AddItem("ProjectReference", @"../Core/Core.csproj");
+            })
+            .Commit("Initial commit");
+
+        var stdout = new InMemoryStandardOutput();
+        var app = BuildApp(repo, stdout);
+
+        var result = await app.RunAsync(["snapshot"], cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+
+        var snapshot = SnapshotSerializer.Deserialize(stdout.GetBytes());
+
+        using (Assert.Multiple())
+        {
+            // should only have one entry per project, not one per target framework
+            await Assert.That(snapshot.Projects.Count).IsEqualTo(2);
+            await Assert.That(snapshot.Projects).ContainsKey("src/Core/Core.csproj");
+            await Assert.That(snapshot.Projects).ContainsKey("src/App/App.csproj");
+
+            // no duplicate input files within a project
+            var coreFiles = snapshot.Projects["src/Core/Core.csproj"].InputFiles;
+            await Assert.That(coreFiles).IsEquivalentTo(coreFiles.Distinct());
+
+            // no duplicate file hashes
+            await Assert.That(snapshot.FileHashes).ContainsKey("src/Core/Core.csproj");
+            await Assert.That(snapshot.FileHashes.Count).IsEquivalentTo(snapshot.FileHashes.Count);
+        }
+    }
+
     private static CommandAppTester BuildApp(TestRepository repo, InMemoryStandardOutput? stdout = null)
     {
         var app = new CommandAppTester();
@@ -148,37 +195,4 @@ public class SnapshotCommandTests
         });
         return app;
     }
-}
-
-public sealed class InMemoryStandardOutput : IStandardOutput
-{
-    private readonly MemoryStream _stream = new();
-
-    public byte[] GetBytes() => _stream.ToArray();
-    public string GetString() => Encoding.UTF8.GetString(GetBytes());
-
-    public IEnumerable<string> GetLines()
-    {
-        using var reader = new StringReader(GetString());
-        string? line;
-        while ((line = reader.ReadLine()) != null)
-        {
-            yield return line;
-        }
-    }
-
-    public Stream OpenStream()
-    {
-        return _stream;
-    }
-}
-
-public sealed class TestEnvironment : IEnvironment
-{
-    public TestEnvironment(string workingDirectory)
-    {
-        WorkingDirectory = workingDirectory;
-    }
-
-    public string WorkingDirectory { get; }
 }

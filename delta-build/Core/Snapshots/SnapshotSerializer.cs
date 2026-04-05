@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace DeltaBuild.Cli.Core;
+namespace DeltaBuild.Cli.Core.Snapshots;
 
 public static class SnapshotSerializer
 {

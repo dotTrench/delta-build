@@ -1,5 +1,8 @@
 using DeltaBuild.Cli;
+using DeltaBuild.Cli.Commands;
 using DeltaBuild.Cli.Core;
+using DeltaBuild.Tests.Utils;
+
 using Spectre.Console.Cli;
 using Spectre.Console.Cli.Testing;
 

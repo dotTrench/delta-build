@@ -2,6 +2,7 @@ using System.ComponentModel;
 
 using DeltaBuild.Cli.Core;
 using DeltaBuild.Cli.Core.Git;
+using DeltaBuild.Cli.Core.Snapshots;
 
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Graph;
@@ -9,7 +10,7 @@ using Microsoft.Build.Graph;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace DeltaBuild.Cli;
+namespace DeltaBuild.Cli.Commands;
 
 public sealed class SnapshotCommand : AsyncCommand<SnapshotCommand.Settings>
 {

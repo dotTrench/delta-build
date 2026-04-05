@@ -1,8 +1,8 @@
 using System.Diagnostics;
-using DeltaBuild.Cli.Core;
+
 using Spectre.Console;
 
-namespace DeltaBuild.Cli;
+namespace DeltaBuild.Cli.Core.Diff;
 
 public static class DiffRenderer
 {

@@ -1,4 +1,6 @@
-namespace DeltaBuild.Cli.Core;
+using DeltaBuild.Cli.Core.Snapshots;
+
+namespace DeltaBuild.Cli.Core.Diff;
 
 public static class DiffCalculator
 {
@@ -124,31 +126,3 @@ public static class DiffCalculator
         }
     }
 }
-
-public record FileDiffResult(string Path, FileState State);
-
-public enum FileState
-{
-    Unchanged = 0,
-    Added = 1,
-    Deleted = 2,
-    Modified = 3,
-}
-
-public enum ProjectState
-{
-    Unchanged = 0,
-    Added = 1,
-    Removed = 2,
-    Modified = 3,
-    Affected = 4,
-}
-
-public record ProjectDiffResult(
-    string Path,
-    ProjectState State,
-    IReadOnlyCollection<string> AffectedBy,
-    IReadOnlyCollection<FileDiffResult> InputFiles
-);
-
-public record DiffResult(IReadOnlyCollection<ProjectDiffResult> Projects);

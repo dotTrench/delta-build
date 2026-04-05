@@ -1,8 +1,9 @@
 using DeltaBuild.Cli.Core.Git;
+
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Graph;
 
-namespace DeltaBuild.Cli.Core;
+namespace DeltaBuild.Cli.Core.Snapshots;
 
 public sealed class SnapshotResolver(IGitRepository repository, IEnvironment environment)
 {
@@ -64,17 +65,4 @@ public sealed class SnapshotResolver(IGitRepository repository, IEnvironment env
         var graph = new ProjectGraph(resolvedEntrypoints, projectCollection);
         return new SnapshotResolverResult.Success(SnapshotGenerator.GenerateSnapshot(graph, worktree));
     }
-}
-
-public abstract record SnapshotResolverResult
-{
-    public record Success(Snapshot Snapshot) : SnapshotResolverResult;
-
-    public record CommitNotFound(string Reference) : SnapshotResolverResult;
-
-    public record EntrypointNotFound(string Path) : SnapshotResolverResult;
-
-    public record AmbiguousEntrypoints(IReadOnlyList<string> Candidates) : SnapshotResolverResult;
-
-    public record NoEntrypointsFound : SnapshotResolverResult;
 }

@@ -27,8 +27,4 @@
         <PackageReference Include="Verify.TUnit" Version="31.15.0" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Core\Snapshots\" />
-    </ItemGroup>
-
 </Project>
