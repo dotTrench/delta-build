@@ -1,0 +1,24 @@
+﻿{
+  commit: {Scrubbed},
+  projects: {
+    src/App/App.csproj: {
+      inputFiles: [
+        src/App/App.csproj
+      ],
+      projectReferences: [
+        src/Core/Core.csproj
+      ]
+    },
+    src/Core/Core.csproj: {
+      inputFiles: [
+        src/Core/Core.csproj,
+        src/Core/Sample.cs
+      ]
+    }
+  },
+  fileHashes: {
+    src/App/App.csproj: ce9f344fae2111420ab667913dfaae600c202322,
+    src/Core/Core.csproj: a5b9e0e7b2064c00c77ea446ba2ddd6c1e3125a6,
+    src/Core/Sample.cs: e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+  }
+}

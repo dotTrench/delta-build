@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/DeltaBuild.Tests/DeltaBuild.Tests.csproj" />
+  </Folder>
+  <Project Path="delta-build/delta-build.csproj" />
+</Solution>

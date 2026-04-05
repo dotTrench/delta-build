@@ -1,0 +1,187 @@
+using DeltaBuild.Cli;
+using DeltaBuild.Cli.Core;
+using Spectre.Console.Cli;
+using Spectre.Console.Cli.Testing;
+
+namespace DeltaBuild.Tests;
+
+public class DiffCommandTests : IDisposable
+{
+    private readonly TestRepository _repo;
+
+    public DiffCommandTests()
+    {
+        _repo = TestRepository.Create();
+    }
+
+    public void Dispose() => _repo.Dispose();
+
+    private CommandAppTester BuildApp(InMemoryStandardOutput? stdout = null)
+    {
+        var app = new CommandAppTester();
+        app.Configure(c =>
+        {
+            c.Settings.Registrar.RegisterInstance<IEnvironment>(new TestEnvironment(_repo.WorkingDirectory));
+            c.Settings.Registrar.RegisterInstance<IStandardOutput>(stdout ?? new InMemoryStandardOutput());
+            c.AddCommand<DiffCommand>("diff");
+            c.PropagateExceptions();
+        });
+        return app;
+    }
+
+    [Test]
+    public async Task OutputsModifiedProject(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .WriteFile("src/Core/Foo.cs", "public class Foo {}")
+            .Commit("Add Foo");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        var lines = stdout.GetLines();
+        await Assert.That(lines).Contains("src/Core/Core.csproj");
+    }
+
+    [Test]
+    public async Task OutputsAffectedProject_WhenDependencyModified(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .CreateCsproj("src/App/App.csproj", x => x.AddItem("ProjectReference", @"../Core/Core.csproj"))
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .WriteFile("src/Core/Foo.cs", "public class Foo {}")
+            .Commit("Add Foo");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        var lines = stdout.GetLines();
+        await Assert.That(lines).Contains("src/Core/Core.csproj");
+        await Assert.That(lines).Contains("src/App/App.csproj");
+    }
+
+    [Test]
+    public async Task DoesNotOutputUnchangedProjects_ByDefault(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .CreateCsproj("src/App/App.csproj")
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .WriteFile("src/Core/Foo.cs", "public class Foo {}")
+            .Commit("Add Foo");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        var lines = stdout.GetLines();
+        await Assert.That(lines).DoesNotContain("src/App/App.csproj");
+    }
+
+    [Test]
+    public async Task OutputsUnchangedProjects_WhenIncludeUnchanged(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .CreateCsproj("src/App/App.csproj")
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .WriteFile("src/Core/Foo.cs", "public class Foo {}")
+            .Commit("Add Foo");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit, "--include-unchanged"],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        var lines = stdout.GetLines();
+        await Assert.That(lines).Contains("src/App/App.csproj");
+    }
+
+    [Test]
+    public async Task DoesNotOutputRemovedProjects_ByDefault(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .CreateCsproj("src/App/App.csproj")
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .DeleteFile("src/App/App.csproj")
+            .Commit("Remove App");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        var lines = stdout.GetLines();
+        await Assert.That(lines).DoesNotContain("src/App/App.csproj");
+    }
+
+    [Test]
+    public async Task OutputsRemovedProjects_WhenIncludeRemoved(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .CreateCsproj("src/App/App.csproj")
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .DeleteFile("src/App/App.csproj")
+            .Commit("Remove App");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit, "--include-removed"],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        var lines = stdout.GetLines();
+        await Assert.That(lines).Contains("src/App/App.csproj");
+    }
+
+    [Test]
+    public async Task ReturnsExitCode1_WhenBaseCommitNotFound(CancellationToken cancellationToken)
+    {
+        _repo.CreateCsproj("src/Core/Core.csproj").Commit("Initial commit");
+
+        var result = await BuildApp().RunAsync(
+            ["diff", "--base", "nonexistent"],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(1);
+    }
+}
