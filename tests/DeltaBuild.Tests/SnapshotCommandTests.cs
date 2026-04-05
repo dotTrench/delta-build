@@ -184,6 +184,25 @@ public class SnapshotCommandTests
         }
     }
 
+    [Test]
+    public async Task DoesNotLeaveWorktreesOrBranches_AfterSnapshot(CancellationToken cancellationToken)
+    {
+        using var repo = TestRepository.Create();
+
+        repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .Commit("Initial commit");
+
+        var app = BuildApp(repo);
+        var result = await app.RunAsync(["snapshot"], cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        using var gitRepo = new Repository(repo.WorkingDirectory);
+
+        await Assert.That(gitRepo.Worktrees).IsEmpty();
+        await Assert.That(gitRepo.Branches.Count()).IsEqualTo(1);
+    }
+
     private static CommandAppTester BuildApp(TestRepository repo, InMemoryStandardOutput? stdout = null)
     {
         var app = new CommandAppTester();

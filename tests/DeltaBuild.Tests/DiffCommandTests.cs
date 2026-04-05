@@ -1,7 +1,8 @@
-using DeltaBuild.Cli;
 using DeltaBuild.Cli.Commands;
 using DeltaBuild.Cli.Core;
 using DeltaBuild.Tests.Utils;
+
+using LibGit2Sharp;
 
 using Spectre.Console.Cli;
 using Spectre.Console.Cli.Testing;
@@ -191,5 +192,28 @@ public sealed class DiffCommandTests : IDisposable
             cancellationToken);
 
         await Assert.That(result.ExitCode).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task DoesNotLeaveWorktreesOrBranches_AfterDiff(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .WriteFile("src/Core/Foo.cs", "public class Foo {}")
+            .Commit("Add Foo");
+
+        var app = BuildApp();
+        var result = await app.RunAsync(["diff", "--base", baseCommit], cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        using var gitRepo = new Repository(_repo.WorkingDirectory);
+
+        await Assert.That(gitRepo.Worktrees).IsEmpty();
+        await Assert.That(gitRepo.Branches.Count()).IsEqualTo(1);
     }
 }
