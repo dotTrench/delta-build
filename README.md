@@ -4,23 +4,23 @@ delta-build analyzes your .NET build graph and git history to determine exactly 
 
 Inspired by [dotnet-affected](https://github.com/leonardochaia/dotnet-affected).
 
-## How It Works
+## How it works
 
-DeltaBuild captures **snapshots** of your build graph at different points in time, then diffs them to identify affected
-projects.
+delta-build generates a snapshot of your repository's build graph at a given commit. To ensure a clean, reproducible
+view of the repository at that point in time, it creates a git worktree for the target commit
+using [LibGit2Sharp](https://github.com/libgit2/libgit2sharp) — this means the snapshot always reflects the committed
+state, never any local modifications.
 
-A snapshot contains:
+Within the worktree, delta-build uses
+MSBuild's [project graph](https://learn.microsoft.com/en-us/visualstudio/msbuild/build-process-overview) to resolve the
+full set of projects and their dependencies.
+It then uses [Microsoft.Build.Prediction](https://github.com/microsoft/MSBuildPrediction)
+to predict the input files for each project — the source files, project files, and other assets that MSBuild would
+consume during a build. Each input file is recorded alongside its git blob hash, giving a precise and fast fingerprint of the
+project's state without hashing files on disk.
 
-- All projects in your solution and their source files
-- Git blob hashes for every input file
-- Project reference relationships
-
-When you run a diff, DeltaBuild:
-
-1. Resolves the base and head commits/snapshots
-2. Computes which source files changed
-3. Propagates changes through the dependency graph
-4. Outputs the minimal set of projects that need building
+When diffing two snapshots, delta-build compares the blob hashes of each project's input files to determine which
+projects have changed directly, then walks the dependency graph to mark any downstream projects as affected.
 
 ## Usage
 
