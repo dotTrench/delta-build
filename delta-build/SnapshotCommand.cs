@@ -1,8 +1,11 @@
 using System.ComponentModel;
+
 using DeltaBuild.Cli.Core;
 using DeltaBuild.Cli.Core.Git;
+
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Graph;
+
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -18,8 +21,31 @@ public sealed class SnapshotCommand : AsyncCommand<SnapshotCommand.Settings>
         public required string Commit { get; init; } = "HEAD";
 
         [CommandOption("-e|--entrypoint <project-or-solution>")]
-        [Description("One or more solution or project files to use as the build graph entrypoint. If not specified, delta-build will attempt to discover entrypoints automatically.")]
+        [Description(
+            "One or more solution or project files to use as the build graph entrypoint. If not specified, delta-build will attempt to discover entrypoints automatically.")]
         public required FileInfo[] Entrypoints { get; init; } = [];
+
+
+        [CommandOption("-o|--output <path>")]
+        [Description("Write output to a file instead of stdout.")]
+        public FileInfo? Output { get; init; }
+
+
+        [CommandOption("--overwrite")]
+        [Description("Overwrite the --output file if it already exists.")]
+        [DefaultValue(false)]
+        public bool Overwrite { get; init; }
+
+
+        public override ValidationResult Validate()
+        {
+            if (!Overwrite && Output is { Exists: true })
+            {
+                return ValidationResult.Error("--output already exists, use --overwrite to overwrite.");
+            }
+
+            return ValidationResult.Success();
+        }
     }
 
     private readonly IAnsiConsole _console;
@@ -111,7 +137,7 @@ public sealed class SnapshotCommand : AsyncCommand<SnapshotCommand.Settings>
 
         var snapshot = SnapshotGenerator.GenerateSnapshot(graph, worktree);
 
-        await using var output = _stdout.OpenStream();
+        await using var output = settings.Output?.Create() ?? _stdout.OpenStream();
         await SnapshotSerializer.SerializeAsync(output, snapshot, cancellationToken);
 
         return 0;
