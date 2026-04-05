@@ -2,38 +2,41 @@ namespace DeltaBuild.Cli.Core;
 
 public static class DiffCalculator
 {
-    public static DiffResult Calculate(Snapshot base_, Snapshot head)
+    public static DiffResult Calculate(Snapshot baseSnapshot, Snapshot headSnapshot)
     {
         var results = new Dictionary<string, ProjectDiffResult>();
 
 
         // Mark added and removed projects
-        foreach (var project in head.Projects.Keys)
+        foreach (var project in headSnapshot.Projects.Keys)
         {
-            if (!base_.Projects.ContainsKey(project))
+            if (!baseSnapshot.Projects.ContainsKey(project))
                 results[project] = new ProjectDiffResult(
                     project,
                     ProjectState.Added,
                     [],
-                    GetFileDiffs(project, base_, head));
+                    GetFileDiffs(project, baseSnapshot, headSnapshot));
         }
 
-        foreach (var project in base_.Projects.Keys)
-            if (!head.Projects.ContainsKey(project))
+        foreach (var project in baseSnapshot.Projects.Keys)
+        {
+            if (!headSnapshot.Projects.ContainsKey(project))
                 results[project] = new ProjectDiffResult(
                     project,
                     ProjectState.Removed,
                     [],
-                    GetFileDiffs(project, base_, head)
+                    GetFileDiffs(project, baseSnapshot, headSnapshot)
                 );
+        }
+
         // Process remaining projects in topological order
-        var sharedProjects = head.Projects
-            .Where(p => base_.Projects.ContainsKey(p.Key))
+        var sharedProjects = headSnapshot.Projects
+            .Where(p => baseSnapshot.Projects.ContainsKey(p.Key))
             .ToDictionary(p => p.Key, p => p.Value);
 
         foreach (var project in TopologicalSort(sharedProjects))
         {
-            var fileDiffs = GetFileDiffs(project, base_, head);
+            var fileDiffs = GetFileDiffs(project, baseSnapshot, headSnapshot);
 
 
             if (IsModified(fileDiffs))
@@ -42,7 +45,7 @@ public static class DiffCalculator
                 continue;
             }
 
-            var affectedBy = head.Projects[project].ProjectReferences
+            var affectedBy = headSnapshot.Projects[project].ProjectReferences
                 .Where(r => results.TryGetValue(r, out var p) && p.State is not ProjectState.Unchanged)
                 .ToList();
 
@@ -57,12 +60,12 @@ public static class DiffCalculator
         return new DiffResult(projects);
     }
 
-    private static List<FileDiffResult> GetFileDiffs(string project, Snapshot @base, Snapshot head)
+    private static List<FileDiffResult> GetFileDiffs(string project, Snapshot baseSnapshot, Snapshot headSnapshot)
     {
-        var baseFiles = @base.Projects.TryGetValue(project, out var bp)
+        var baseFiles = baseSnapshot.Projects.TryGetValue(project, out var bp)
             ? bp.InputFiles
             : [];
-        var headFiles = head.Projects.TryGetValue(project, out var hp)
+        var headFiles = headSnapshot.Projects.TryGetValue(project, out var hp)
             ? hp.InputFiles
             : [];
 
@@ -70,8 +73,8 @@ public static class DiffCalculator
             .Order()
             .Select(file =>
             {
-                @base.FileHashes.TryGetValue(file, out var baseHash);
-                head.FileHashes.TryGetValue(file, out var headHash);
+                baseSnapshot.FileHashes.TryGetValue(file, out var baseHash);
+                headSnapshot.FileHashes.TryGetValue(file, out var headHash);
 
                 var state = (baseHash, headHash) switch
                 {
@@ -95,9 +98,13 @@ public static class DiffCalculator
         var inDegree = projects.Keys.ToDictionary(p => p, _ => 0);
 
         foreach (var (project, snapshot) in projects)
-        foreach (var reference in snapshot.ProjectReferences)
-            if (projects.ContainsKey(reference))
-                inDegree[project]++;
+        {
+            foreach (var reference in snapshot.ProjectReferences)
+            {
+                if (projects.ContainsKey(reference))
+                    inDegree[project]++;
+            }
+        }
 
         // start with projects that have no dependencies
         var queue = new Queue<string>(inDegree.Where(x => x.Value == 0).Select(x => x.Key));
@@ -122,10 +129,10 @@ public record FileDiffResult(string Path, FileState State);
 
 public enum FileState
 {
-    Added,
-    Deleted,
-    Modified,
-    Unchanged
+    Unchanged = 0,
+    Added = 1,
+    Deleted = 2,
+    Modified = 3,
 }
 
 public enum ProjectState
@@ -141,6 +148,7 @@ public record ProjectDiffResult(
     string Path,
     ProjectState State,
     IReadOnlyCollection<string> AffectedBy,
-    IReadOnlyCollection<FileDiffResult> InputFiles);
+    IReadOnlyCollection<FileDiffResult> InputFiles
+);
 
 public record DiffResult(IReadOnlyCollection<ProjectDiffResult> Projects);
