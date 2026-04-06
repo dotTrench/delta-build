@@ -73,7 +73,7 @@ public sealed class SnapshotCommand : AsyncCommand<SnapshotCommand.Settings>
             return 1;
         }
 
-        var sha = repo.LookupCommit(settings.Commit);
+        var sha = repo.LookupCommitSha(settings.Commit);
 
         if (sha is null)
         {
@@ -136,7 +136,7 @@ public sealed class SnapshotCommand : AsyncCommand<SnapshotCommand.Settings>
         using var projectCollection = new ProjectCollection();
         var graph = new ProjectGraph(entrypoints, projectCollection);
 
-        var snapshot = SnapshotGenerator.GenerateSnapshot(graph, worktree);
+        var snapshot = await SnapshotGenerator.GenerateSnapshot(graph, worktree, cancellationToken);
 
         await using var output = settings.Output?.Create() ?? _stdout.OpenStream();
         await SnapshotSerializer.SerializeAsync(output, snapshot, cancellationToken);

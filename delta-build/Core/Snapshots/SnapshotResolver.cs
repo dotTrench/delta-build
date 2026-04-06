@@ -27,7 +27,7 @@ public sealed class SnapshotResolver(IGitRepository repository, IEnvironment env
             return new SnapshotResolverResult.Success(snapshot);
         }
 
-        var sha = repository.LookupCommit(value);
+        var sha = repository.LookupCommitSha(value);
         if (sha is null)
             return new SnapshotResolverResult.CommitNotFound(value);
 
@@ -70,6 +70,6 @@ public sealed class SnapshotResolver(IGitRepository repository, IEnvironment env
 
         using var projectCollection = new ProjectCollection();
         var graph = new ProjectGraph(resolvedEntrypoints, projectCollection);
-        return new SnapshotResolverResult.Success(SnapshotGenerator.GenerateSnapshot(graph, worktree));
+        return new SnapshotResolverResult.Success(await SnapshotGenerator.GenerateSnapshot(graph, worktree, cancellationToken));
     }
 }
