@@ -18,7 +18,14 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+      - name: Enable long paths (Windows)
+        if: runner.os == 'Windows'
+        run: git config --system core.longpaths true
+
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:

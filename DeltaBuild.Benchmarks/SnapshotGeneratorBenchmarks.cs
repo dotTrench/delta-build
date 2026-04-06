@@ -2,6 +2,7 @@ using BenchmarkDotNet.Attributes;
 
 using DeltaBuild.Cli.Core.Git;
 using DeltaBuild.Cli.Core.Snapshots;
+using DeltaBuild.TestUtils;
 
 using Microsoft.Build.Graph;
 using Microsoft.Build.Locator;
@@ -17,29 +18,27 @@ public class SnapshotGeneratorBenchmarks
     }
 
     private ProjectGraph _graph = null!;
-    private LibGit2Repository _repo = null!;
     private IWorktree _workTree = null!;
 
-    [Params("fixtures/spectre.console/src/Spectre.Console.slnx", "fixtures/MassTransit/MassTransit.sln")]
-    public required string Entrypoint { get; set; }
+    [Params("spectre.console", "MassTransit")]
+    public required string Fixture { get; set; }
 
 
     [GlobalSetup]
-    public void Setup()
+    public async Task Setup()
     {
-        var root = FixtureResolver.GetRepositoryRoot();
+        var fixture = TestFixtures.Get(Fixture);
+        _graph = new ProjectGraph(Path.Combine(fixture.Root, fixture.PrimaryEntrypoint));
 
-        var path = Path.Combine(root, Entrypoint);
-        _graph = new ProjectGraph(path);
-        _repo = LibGit2Repository.Discover(path) ?? throw new InvalidOperationException();
-        _workTree = _repo.CreateWorktree("HEAD");
+        var repo = await GitRepository.DiscoverAsync(fixture.Root) ?? throw new InvalidOperationException();
+        var sha = await repo.LookupCommitShaAsync("HEAD") ?? throw new InvalidOperationException();
+        _workTree = await repo.CreateWorktreeAsync(sha);
     }
 
     [GlobalCleanup]
-    public void Cleanup()
+    public async Task Cleanup()
     {
-        _workTree.Dispose();
-        _repo.Dispose();
+        await _workTree.DisposeAsync();
     }
 
     [Benchmark]
