@@ -27,6 +27,7 @@ public sealed class DiffCommandTests : IDisposable
         {
             c.Settings.Registrar.RegisterInstance<IEnvironment>(new TestEnvironment(_repo.WorkingDirectory));
             c.Settings.Registrar.RegisterInstance<IStandardOutput>(stdout ?? new InMemoryStandardOutput());
+            c.Settings.Registrar.RegisterInstance<IStandardInput>(new NullStandardInput());
             c.AddCommand<DiffCommand>("diff");
             c.PropagateExceptions();
         });

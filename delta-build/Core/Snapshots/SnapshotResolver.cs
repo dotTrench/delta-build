@@ -5,7 +5,7 @@ using Microsoft.Build.Graph;
 
 namespace DeltaBuild.Cli.Core.Snapshots;
 
-public sealed class SnapshotResolver(IGitRepository repository, IEnvironment environment)
+public sealed class SnapshotResolver(IGitRepository repository, IEnvironment environment, IStandardInput stdin)
 {
     public async Task<SnapshotResolverResult> ResolveAsync(
         string value,
@@ -13,6 +13,13 @@ public sealed class SnapshotResolver(IGitRepository repository, IEnvironment env
         CancellationToken cancellationToken = default
     )
     {
+        if (value == "-")
+        {
+            await using var stream = stdin.OpenStream();
+            var snapshot = await SnapshotSerializer.DeserializeAsync(stream, cancellationToken);
+            return new SnapshotResolverResult.Success(snapshot);
+        }
+
         if (File.Exists(value))
         {
             await using var file = File.OpenRead(value);

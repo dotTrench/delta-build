@@ -1,9 +1,7 @@
-using DeltaBuild.Cli;
 using DeltaBuild.Cli.Commands;
 using DeltaBuild.Cli.Core;
 using DeltaBuild.Tests.Utils;
 
-using Spectre.Console.Cli;
 using Spectre.Console.Cli.Testing;
 
 namespace DeltaBuild.Tests;
@@ -38,6 +36,8 @@ public sealed class DiffCommandOutputFormatTests : IDisposable
         {
             c.Settings.Registrar.RegisterInstance<IEnvironment>(new TestEnvironment(_repo.WorkingDirectory));
             c.Settings.Registrar.RegisterInstance<IStandardOutput>(stdout ?? new InMemoryStandardOutput());
+            c.Settings.Registrar.RegisterInstance<IStandardInput>(new NullStandardInput());
+
             c.AddCommand<DiffCommand>("diff");
         });
         return app;

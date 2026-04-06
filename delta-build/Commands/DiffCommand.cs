@@ -18,11 +18,11 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
     {
         [CommandOption("--head <commit-or-snapshot-file>")]
         [DefaultValue("HEAD")]
-        [Description("The commit, branch, tag, or snapshot file to use as the head.")]
+        [Description("The commit, branch, tag, or snapshot file to use as the head. '-' for STDIN")]
         public required string Head { get; init; } = "HEAD";
 
         [CommandOption("--base <commit-or-snapshot-file>", isRequired: true)]
-        [Description("The commit, branch, tag, or snapshot file to diff against.")]
+        [Description("The commit, branch, tag, or snapshot file to diff against. '-' for STDIN")]
         public required string Base { get; init; }
 
         [CommandOption("-e|--entrypoint <project-or-solution>")]
@@ -118,6 +118,13 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
                 return ValidationResult.Error("--output is required when using sln or slnx format.");
             }
 
+            if (Base == "-" && Head == "-")
+            {
+                return ValidationResult.Error(
+                    "STDIN(-) redirect can't be used for both '--head' and '--base' at the same time"
+                );
+            }
+
             return ValidationResult.Success();
         }
     }
@@ -126,12 +133,14 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
     private readonly IEnvironment _environment;
     private readonly IAnsiConsole _console;
     private readonly IStandardOutput _stdout;
+    private readonly IStandardInput _stdin;
 
-    public DiffCommand(IEnvironment environment, IAnsiConsole console, IStandardOutput stdout)
+    public DiffCommand(IEnvironment environment, IAnsiConsole console, IStandardOutput stdout, IStandardInput stdin)
     {
         _environment = environment;
         _console = console;
         _stdout = stdout;
+        _stdin = stdin;
     }
 
     protected override async Task<int> ExecuteAsync(
@@ -146,7 +155,7 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
             return 1;
         }
 
-        var resolver = new SnapshotResolver(repo, _environment);
+        var resolver = new SnapshotResolver(repo, _environment, _stdin);
 
 
         var headSnapshot = await ResolveSnapshotAsync(

@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-using DeltaBuild.Cli.Commands;
+﻿using DeltaBuild.Cli.Commands;
 using DeltaBuild.Cli.Core;
 
 using Microsoft.Build.Locator;
@@ -15,6 +13,7 @@ app.Configure(c =>
 {
     c.Settings.Registrar.RegisterInstance<IEnvironment>(new SystemEnvironment());
     c.Settings.Registrar.RegisterInstance<IStandardOutput>(new ConsoleStandardOutput());
+    c.Settings.Registrar.RegisterInstance<IStandardInput>(new ConsoleStandardInput());
     c.ConfigureConsole(AnsiConsole.Create(new AnsiConsoleSettings
     {
         Out = new AnsiConsoleOutput(Console.Error), Interactive = InteractionSupport.Detect

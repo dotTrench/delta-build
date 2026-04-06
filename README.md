@@ -16,7 +16,8 @@ MSBuild's [project graph](https://learn.microsoft.com/en-us/visualstudio/msbuild
 full set of projects and their dependencies.
 It then uses [Microsoft.Build.Prediction](https://github.com/microsoft/MSBuildPrediction)
 to predict the input files for each project — the source files, project files, and other assets that MSBuild would
-consume during a build. Each input file is recorded alongside its git blob hash, giving a precise and fast fingerprint of the
+consume during a build. Each input file is recorded alongside its git blob hash, giving a precise and fast fingerprint
+of the
 project's state without hashing files on disk.
 
 When diffing two snapshots, delta-build compares the blob hashes of each project's input files to determine which
@@ -68,20 +69,20 @@ delta-build diff --base main --format sln --output affected.sln
 
 ## Options
 
-| Flag                      | Description                                                             | Default       |
-|---------------------------|-------------------------------------------------------------------------|---------------|
-| `--base <ref>`            | Commit, branch, tag, or snapshot file to compare against                | Required      |
-| `--head <ref>`            | Commit, branch, tag, or snapshot file to compare to                     | `HEAD`        |
-| `-e, --entrypoint <path>` | Solution or project file(s) to analyze                                  | Auto-discover |
-| `--include-affected`      | Include projects depending on changed code                              | `true`        |
-| `--include-modified`      | Include projects with direct file changes                               | `true`        |
-| `--include-added`         | Include new projects                                                    | `true`        |
-| `--include-removed`       | Include deleted projects                                                | `false`       |
-| `--include-unchanged`     | Include unchanged projects                                              | `false`       |
-| `--pretty`                | Render a colored tree view to stderr                                    | `false`       |
-| `--detailed`              | When combined with --pretty prints more detailed view of diff to stderr | `false`       |
-| `--format <format>`       | Output format: `plain`, `json`, `sln`, `slnx`                           | `plain`       |
-| `--output <path>`         | Write output to file                                                    | stdout        |
+| Flag                      | Description                                                                         | Default       |
+|---------------------------|-------------------------------------------------------------------------------------|---------------|
+| `--base <ref>`            | Commit, branch, tag, or snapshot file to compare against (use - to read from stdin) | Required      |
+| `--head <ref>`            | Commit, branch, tag, or snapshot file to compare to, (use - to read from stdin)     | `HEAD`        |
+| `-e, --entrypoint <path>` | Solution or project file(s) to analyze                                              | Auto-discover |
+| `--include-affected`      | Include projects depending on changed code                                          | `true`        |
+| `--include-modified`      | Include projects with direct file changes                                           | `true`        |
+| `--include-added`         | Include new projects                                                                | `true`        |
+| `--include-removed`       | Include deleted projects                                                            | `false`       |
+| `--include-unchanged`     | Include unchanged projects                                                          | `false`       |
+| `--pretty`                | Render a colored tree view to stderr                                                | `false`       |
+| `--detailed`              | When combined with --pretty prints more detailed view of diff to stderr             | `false`       |
+| `--format <format>`       | Output format: `plain`, `json`, `sln`, `slnx`                                       | `plain`       |
+| `--output <path>`         | Write output to file                                                                | stdout        |
 
 ### `snapshot` - Save a build graph snapshot
 
@@ -106,3 +107,25 @@ delta-build snapshot --commit v1.0 > snapshot.json
 | `-o, --output <path>`     | Write output to file                             | stdout        |
 | `--overwrite`             | Overwrite the --output file if it already exists | `false`       |
 
+## Piping
+
+delta-build is designed with Unix-style pipelines in mind, making it easy to chain commands or handle your snapshots.
+
+### Examples
+
+```bash
+# Calculate differences between HEAD and main, build all affected projects
+delta-build diff --base main | dotnet build
+
+# Pretty print manifest file
+delta-build snapshot | jq
+
+# Compress snapshot of HEAD using gzip
+delta-build snapshot | gzip > snapshot.json
+
+# Use a gzipped snapshot from Azure Blob Storage as a base
+az storage blob download --container-name snapshots --name main.json.gz \
+  | gzip --decompress \
+  | delta-build diff --base=- --head=HEAD \
+  | dotnet build
+```
