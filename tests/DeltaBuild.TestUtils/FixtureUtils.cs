@@ -46,6 +46,13 @@ public static class TestFixtures
 
     public static readonly TestFixture MassTransit = new("MassTransit",
         FixtureUtils.GetFixturePath("MassTransit"),
-        Path.Combine("src", "MassTransit.sln")
+        "MassTransit.sln"
     );
+
+    public static TestFixture Get(string name) => name switch
+    {
+        "spectre.console" => SpectreConsole,
+        "MassTransit" => MassTransit,
+        _ => throw new ArgumentOutOfRangeException(nameof(name), name, null)
+    };
 }

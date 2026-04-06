@@ -66,14 +66,14 @@ public sealed class SnapshotCommand : AsyncCommand<SnapshotCommand.Settings>
         CancellationToken cancellationToken
     )
     {
-        using var repo = LibGit2Repository.Discover(_environment.WorkingDirectory);
+        var repo = await GitRepository.DiscoverAsync(_environment.WorkingDirectory, cancellationToken);
         if (repo is null)
         {
             _console.WriteLine("[red]Unable to find git repository[/]");
             return 1;
         }
 
-        var sha = repo.LookupCommitSha(settings.Commit);
+        var sha = await repo.LookupCommitShaAsync(settings.Commit, cancellationToken);
 
         if (sha is null)
         {
