@@ -27,7 +27,7 @@ public sealed class SnapshotResolver(IGitRepository repository, IEnvironment env
             return new SnapshotResolverResult.Success(snapshot);
         }
 
-        var sha = repository.LookupCommit(value);
+        var sha = repository.LookupCommitSha(value);
         if (sha is null)
             return new SnapshotResolverResult.CommitNotFound(value);
 

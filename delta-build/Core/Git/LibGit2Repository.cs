@@ -13,10 +13,20 @@ public sealed class LibGit2Repository : IGitRepository
 
     public string WorkingDirectory => _repository.Info.WorkingDirectory;
 
-    public string? LookupCommit(string reference)
+    public string? LookupCommitSha(string reference)
     {
         var obj = _repository.Lookup(reference);
         return obj?.Peel<Commit>()?.Sha;
+    }
+
+    public Task<IWorktree> CreateWorktreeAsync(string commitSha, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(CreateWorktree(commitSha));
+    }
+
+    public Task<string?> LookupCommitShaAsync(string reference, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(LookupCommitSha(reference));
     }
 
     public IWorktree CreateWorktree(string commit)

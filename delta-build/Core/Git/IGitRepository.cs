@@ -4,5 +4,8 @@ public interface IGitRepository : IDisposable
 {
     string WorkingDirectory { get; }
     IWorktree CreateWorktree(string commit);
-    string? LookupCommit(string reference);
+    string? LookupCommitSha(string reference);
+
+    Task<IWorktree> CreateWorktreeAsync(string commitSha, CancellationToken cancellationToken = default);
+    Task<string?> LookupCommitShaAsync(string reference, CancellationToken cancellationToken = default);
 }

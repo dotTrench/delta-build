@@ -5,12 +5,10 @@ public interface IWorktree : IDisposable
     string WorkingDirectory { get; }
     string Commit { get; }
 
-    string? GetFileSha(string relativePath);
-
     /// <summary>
     /// Collect all blob object-ids for the current tee
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task<IReadOnlyDictionary<string, string>> CollectTreeObjectIdsAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyDictionary<string, string>> GetTrackedFileShasAsync(CancellationToken cancellationToken = default);
 }

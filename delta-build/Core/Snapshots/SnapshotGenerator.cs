@@ -21,7 +21,7 @@ public static class SnapshotGenerator
         CancellationToken cancellationToken = default
     )
     {
-        var objectIds = await workTree.CollectTreeObjectIdsAsync(cancellationToken);
+        var objectIds = await workTree.GetTrackedFileShasAsync(cancellationToken);
         var executor = new ProjectGraphPredictionExecutor(
             GraphPredictors,
             ProjectPredictors.AllProjectPredictors

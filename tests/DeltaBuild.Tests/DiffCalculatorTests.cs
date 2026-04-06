@@ -46,21 +46,15 @@ public class DiffCalculatorTests
         var @base = BuildSnapshot("abc",
             new()
             {
-                ["src/Core/Core.csproj"] = (new()
-                {
-                    ["src/Core/Core.csproj"] = "hash1",
-                    ["src/Core/Foo.cs"] = "hash2"
-                }, [])
+                ["src/Core/Core.csproj"] = (
+                    new() { ["src/Core/Core.csproj"] = "hash1", ["src/Core/Foo.cs"] = "hash2" }, [])
             });
 
         var head = BuildSnapshot("def",
             new()
             {
-                ["src/Core/Core.csproj"] = (new()
-                {
-                    ["src/Core/Core.csproj"] = "hash1",
-                    ["src/Core/Foo.cs"] = "hash3"
-                }, [])
+                ["src/Core/Core.csproj"] = (
+                    new() { ["src/Core/Core.csproj"] = "hash1", ["src/Core/Foo.cs"] = "hash3" }, [])
             });
 
         var result = DiffCalculator.Calculate(@base, head);
@@ -102,7 +96,8 @@ public class DiffCalculatorTests
         var @base = BuildSnapshot("abc", new()
         {
             ["src/Project1/Project1.csproj"] = (new() { ["src/Project1/Project1.csproj"] = "hash1" }, []),
-            ["src/Project2/Project2.csproj"] = (new() { ["src/Project2/Project2.csproj"] = "hash2" }, ["src/Project1/Project1.csproj"]),
+            ["src/Project2/Project2.csproj"] =
+                (new() { ["src/Project2/Project2.csproj"] = "hash2" }, ["src/Project1/Project1.csproj"]),
             ["src/Project3/Project3.csproj"] = (new() { ["src/Project3/Project3.csproj"] = "hash3" },
                 ["src/Project2/Project2.csproj", "src/Project1/Project1.csproj"])
         });
@@ -110,7 +105,8 @@ public class DiffCalculatorTests
         var head = BuildSnapshot("def", new()
         {
             ["src/Project1/Project1.csproj"] = (new() { ["src/Project1/Project1.csproj"] = "hash4" }, []), // changed
-            ["src/Project2/Project2.csproj"] = (new() { ["src/Project2/Project2.csproj"] = "hash2" }, ["src/Project1/Project1.csproj"]),
+            ["src/Project2/Project2.csproj"] =
+                (new() { ["src/Project2/Project2.csproj"] = "hash2" }, ["src/Project1/Project1.csproj"]),
             ["src/Project3/Project3.csproj"] = (new() { ["src/Project3/Project3.csproj"] = "hash3" },
                 ["src/Project2/Project2.csproj", "src/Project1/Project1.csproj"])
         });
@@ -160,11 +156,8 @@ public class DiffCalculatorTests
         var head = BuildSnapshot("def",
             new()
             {
-                ["src/Core/Core.csproj"] = (new()
-                {
-                    ["src/Core/Core.csproj"] = "hash1",
-                    ["src/Core/Foo.cs"] = "hash2"
-                }, [])
+                ["src/Core/Core.csproj"] = (
+                    new() { ["src/Core/Core.csproj"] = "hash1", ["src/Core/Foo.cs"] = "hash2" }, [])
             });
 
         var result = DiffCalculator.Calculate(@base, head);
@@ -179,11 +172,8 @@ public class DiffCalculatorTests
         var @base = BuildSnapshot("abc",
             new()
             {
-                ["src/Core/Core.csproj"] = (new()
-                {
-                    ["src/Core/Core.csproj"] = "hash1",
-                    ["src/Core/Foo.cs"] = "hash2"
-                }, [])
+                ["src/Core/Core.csproj"] = (
+                    new() { ["src/Core/Core.csproj"] = "hash1", ["src/Core/Foo.cs"] = "hash2" }, [])
             });
 
         var head = BuildSnapshot("def",
@@ -193,6 +183,62 @@ public class DiffCalculatorTests
 
         var core = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/Core/Core.csproj");
         await Assert.That(core.State).IsEqualTo(ProjectState.Modified);
+    }
+
+    [Test]
+    public async Task Affected_WhenDependencyIsModified_AndProjectsAreInReverseInsertionOrder()
+    {
+        var @base = new Snapshot
+        {
+            Commit = "abc",
+            Projects =
+            [
+                new SnapshotProject
+                {
+                    Path = "src/App/App.csproj",
+                    TopologicalOrder = 1,
+                    InputFiles = new Dictionary<string, string> { ["src/App/App.csproj"] = "hash2" },
+                    ProjectReferences = ["src/Core/Core.csproj"]
+                },
+                new SnapshotProject
+                {
+                    Path = "src/Core/Core.csproj",
+                    TopologicalOrder = 0,
+                    InputFiles = new Dictionary<string, string> { ["src/Core/Core.csproj"] = "hash1" },
+                    ProjectReferences = []
+                }
+            ]
+        };
+
+        var head = new Snapshot
+        {
+            Commit = "def",
+            Projects =
+            [
+                new SnapshotProject
+                {
+                    Path = "src/App/App.csproj",
+                    TopologicalOrder = 1,
+                    InputFiles = new Dictionary<string, string> { ["src/App/App.csproj"] = "hash2" },
+                    ProjectReferences = ["src/Core/Core.csproj"]
+                },
+                new SnapshotProject
+                {
+                    Path = "src/Core/Core.csproj",
+                    TopologicalOrder = 0,
+                    InputFiles = new Dictionary<string, string> { ["src/Core/Core.csproj"] = "hash3" }, // changed
+                    ProjectReferences = []
+                }
+            ]
+        };
+
+        var result = DiffCalculator.Calculate(@base, head);
+
+        var core = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/Core/Core.csproj");
+        await Assert.That(core.State).IsEqualTo(ProjectState.Modified);
+
+        var app = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/App/App.csproj");
+        await Assert.That(app.State).IsEqualTo(ProjectState.Affected);
     }
 
     [Test]
@@ -206,10 +252,7 @@ public class DiffCalculatorTests
             });
 
         var head = BuildSnapshot("def",
-            new()
-            {
-                ["src/App/App.csproj"] = (new() { ["src/App/App.csproj"] = "hash2" }, ["src/Core/Core.csproj"])
-            });
+            new() { ["src/App/App.csproj"] = (new() { ["src/App/App.csproj"] = "hash2" }, ["src/Core/Core.csproj"]) });
 
         var result = DiffCalculator.Calculate(@base, head);
 

@@ -73,7 +73,7 @@ public sealed class SnapshotCommand : AsyncCommand<SnapshotCommand.Settings>
             return 1;
         }
 
-        var sha = repo.LookupCommit(settings.Commit);
+        var sha = repo.LookupCommitSha(settings.Commit);
 
         if (sha is null)
         {

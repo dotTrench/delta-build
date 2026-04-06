@@ -39,7 +39,7 @@ public sealed class LibGit2Worktree : IWorktree
     public bool IsFileIgnored(string relativePath) =>
         _worktree.WorktreeRepository.Ignore.IsPathIgnored(relativePath);
 
-    public Task<IReadOnlyDictionary<string, string>> CollectTreeObjectIdsAsync(
+    public Task<IReadOnlyDictionary<string, string>> GetTrackedFileShasAsync(
         CancellationToken cancellationToken = default
     )
     {
