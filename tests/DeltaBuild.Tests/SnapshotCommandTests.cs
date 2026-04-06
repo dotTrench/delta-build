@@ -171,12 +171,11 @@ public class SnapshotCommandTests
         {
             // should only have one entry per project, not one per target framework
             await Assert.That(snapshot.Projects.Count).IsEqualTo(2);
-            await Assert.That(snapshot.Projects).ContainsKey("src/Core/Core.csproj");
-            await Assert.That(snapshot.Projects).ContainsKey("src/App/App.csproj");
+            var coreProject =
+                await Assert.That(snapshot.Projects).HasSingleItem(it => it.Path == "src/Core/Core.csproj");
+            await Assert.That(snapshot.Projects).HasSingleItem(it => it.Path == "src/App/App.csproj");
 
-            // no duplicate input files within a project
-            var coreFiles = snapshot.Projects["src/Core/Core.csproj"].InputFiles;
-            await Assert.That(coreFiles).IsEquivalentTo(coreFiles.Distinct());
+            await Assert.That(coreProject.InputFiles).IsEquivalentTo(coreProject.InputFiles.Distinct());
 
             // no duplicate file hashes
             await Assert.That(snapshot.FileHashes).ContainsKey("src/Core/Core.csproj");

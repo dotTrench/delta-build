@@ -26,10 +26,10 @@ public static class SnapshotGenerator
         var collector = new Collector(workTree);
         executor.PredictInputsAndOutputs(projectGraph, collector);
 
-        var projects = collector.GetProjects(projectGraph);
+        var projects = collector.GetProjects(projectGraph).ToList();
 
         var hashes = new Dictionary<string, string>();
-        foreach (var file in projects.Values.SelectMany(p => p.InputFiles))
+        foreach (var file in projects.SelectMany(p => p.InputFiles))
         {
             if (hashes.ContainsKey(file))
             {
@@ -50,7 +50,7 @@ public static class SnapshotGenerator
         return new Snapshot
         {
             Commit = workTree.Commit,
-            Projects = projects.OrderBy(it => it.Key).ToDictionary(),
+            Projects = projects,
             FileHashes = hashes.OrderBy(it => it.Key).ToDictionary()
         };
     }
@@ -100,9 +100,10 @@ public static class SnapshotGenerator
         }
 
 
-        public IReadOnlyDictionary<string, SnapshotProject> GetProjects(ProjectGraph graph)
+        public IEnumerable<SnapshotProject> GetProjects(ProjectGraph graph)
         {
-            foreach (var node in graph.ProjectNodes)
+            var order = new Dictionary<string, int>();
+            foreach (var (node, i) in graph.ProjectNodesTopologicallySorted.Select((node, i) => (node, i)))
             {
                 var collector = _collectors.GetOrAdd(node.ProjectInstance.FullPath, new ProjectCollector());
                 var references = node.ProjectReferences.Select(it =>
@@ -111,12 +112,15 @@ public static class SnapshotGenerator
                     )
                 );
                 collector.AddProjectReferences(references);
+
+                order.TryAdd(node.ProjectInstance.FullPath, i);
             }
 
             return _collectors
-                .ToDictionary(it => PathHelpers.Normalize(Path.GetRelativePath(_worktree.WorkingDirectory, it.Key)),
-                    it => new SnapshotProject
+                .Select(it => new SnapshotProject
                     {
+                        Path = PathHelpers.Normalize(Path.GetRelativePath(_worktree.WorkingDirectory, it.Key)),
+                        TopologicalOrder = order.GetValueOrDefault(it.Key, int.MaxValue),
                         InputFiles = it.Value.GetInputFiles()
                             .Order()
                             .Select(PathHelpers.Normalize)
@@ -126,7 +130,9 @@ public static class SnapshotGenerator
                             .Select(PathHelpers.Normalize)
                             .ToList()
                     }
-                );
+                )
+                .OrderBy(it => it.TopologicalOrder)
+                .ThenBy(it => it.Path);
         }
 
         private sealed class ProjectCollector

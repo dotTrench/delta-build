@@ -1,3 +1,5 @@
+using System.Collections.Frozen;
+
 using DeltaBuild.Cli.Core.Snapshots;
 
 namespace DeltaBuild.Cli.Core.Diff;
@@ -6,39 +8,55 @@ public static class DiffCalculator
 {
     public static DiffResult Calculate(Snapshot baseSnapshot, Snapshot headSnapshot)
     {
+        var fileStates = CalculateFileStates(baseSnapshot, headSnapshot);
+
+        var baseProjects = baseSnapshot.Projects.ToFrozenDictionary(it => it.Path);
+        var headProjects = headSnapshot.Projects.ToFrozenDictionary(it => it.Path);
+
         var results = new Dictionary<string, ProjectDiffResult>();
-
-
         // Mark added and removed projects
-        foreach (var project in headSnapshot.Projects.Keys)
+        foreach (var project in headProjects.Values)
         {
-            if (!baseSnapshot.Projects.ContainsKey(project))
-                results[project] = new ProjectDiffResult(
-                    project,
+            if (!baseProjects.ContainsKey(project.Path))
+            {
+                results[project.Path] = new ProjectDiffResult(
+                    project.Path,
                     ProjectState.Added,
                     [],
-                    GetFileDiffs(project, baseSnapshot, headSnapshot));
+                    GetFileDiffs(
+                        baseProject: null,
+                        headProject: project,
+                        fileStates
+                    ));
+            }
         }
 
-        foreach (var project in baseSnapshot.Projects.Keys)
+        foreach (var project in baseProjects.Values)
         {
-            if (!headSnapshot.Projects.ContainsKey(project))
-                results[project] = new ProjectDiffResult(
-                    project,
+            if (!headProjects.ContainsKey(project.Path))
+            {
+                results[project.Path] = new ProjectDiffResult(
+                    project.Path,
                     ProjectState.Removed,
                     [],
-                    GetFileDiffs(project, baseSnapshot, headSnapshot)
+                    GetFileDiffs(baseProject: project, headProject: null, fileStates)
                 );
+            }
         }
 
-        // Process remaining projects in topological order
-        var sharedProjects = headSnapshot.Projects
-            .Where(p => baseSnapshot.Projects.ContainsKey(p.Key))
-            .ToDictionary(p => p.Key, p => p.Value);
 
-        foreach (var project in TopologicalSort(sharedProjects))
+        var sharedProjects = headSnapshot.Projects
+            .Where(p => baseProjects.ContainsKey(p.Path))
+            .OrderBy(it => it.TopologicalOrder)
+            .Select(it => it.Path);
+
+        foreach (var project in sharedProjects)
         {
-            var fileDiffs = GetFileDiffs(project, baseSnapshot, headSnapshot);
+            var fileDiffs = GetFileDiffs(
+                baseProjects[project],
+                headProjects[project],
+                fileStates
+            );
 
 
             if (IsModified(fileDiffs))
@@ -47,7 +65,7 @@ public static class DiffCalculator
                 continue;
             }
 
-            var affectedBy = headSnapshot.Projects[project].ProjectReferences
+            var affectedBy = headProjects[project].ProjectReferences
                 .Where(r => results.TryGetValue(r, out var p) && p.State is not ProjectState.Unchanged)
                 .ToList();
 
@@ -62,67 +80,39 @@ public static class DiffCalculator
         return new DiffResult(projects);
     }
 
-    private static List<FileDiffResult> GetFileDiffs(string project, Snapshot baseSnapshot, Snapshot headSnapshot)
+    private static FrozenDictionary<string, FileState> CalculateFileStates(Snapshot baseSnapshot, Snapshot headSnapshot)
     {
-        var baseFiles = baseSnapshot.Projects.TryGetValue(project, out var bp)
-            ? bp.InputFiles
-            : [];
-        var headFiles = headSnapshot.Projects.TryGetValue(project, out var hp)
-            ? hp.InputFiles
-            : [];
+        var allFiles = baseSnapshot.FileHashes.Keys.Union(headSnapshot.FileHashes.Keys);
 
-        return baseFiles.Union(headFiles)
-            .Order()
-            .Select(file =>
+        return allFiles.ToFrozenDictionary(file => file, file =>
+        {
+            baseSnapshot.FileHashes.TryGetValue(file, out var baseHash);
+            headSnapshot.FileHashes.TryGetValue(file, out var headHash);
+
+            return (baseHash, headHash) switch
             {
-                baseSnapshot.FileHashes.TryGetValue(file, out var baseHash);
-                headSnapshot.FileHashes.TryGetValue(file, out var headHash);
+                (null, not null) => FileState.Added,
+                (not null, null) => FileState.Deleted,
+                _ when baseHash != headHash => FileState.Modified,
+                _ => FileState.Unchanged
+            };
+        });
+    }
 
-                var state = (baseHash, headHash) switch
-                {
-                    (null, _) => FileState.Added,
-                    (_, null) => FileState.Deleted,
-                    _ when baseHash != headHash => FileState.Modified,
-                    _ => FileState.Unchanged
-                };
+    private static List<FileDiffResult> GetFileDiffs(
+        SnapshotProject? baseProject,
+        SnapshotProject? headProject,
+        FrozenDictionary<string, FileState> fileStates
+    )
+    {
+        var allFiles = (baseProject?.InputFiles ?? []).Union(headProject?.InputFiles ?? []);
 
-                return new FileDiffResult(file, state);
-            })
+        return allFiles
+            .Select(f => new FileDiffResult(f, fileStates.GetValueOrDefault(f, FileState.Unchanged)))
+            .OrderBy(f => f.Path)
             .ToList();
     }
 
     private static bool IsModified(IReadOnlyCollection<FileDiffResult> files) =>
         files.Any(f => f.State != FileState.Unchanged);
-
-    private static IEnumerable<string> TopologicalSort(IReadOnlyDictionary<string, SnapshotProject> projects)
-    {
-        // in-degree = number of dependencies (things this project depends on)
-        var inDegree = projects.Keys.ToDictionary(p => p, _ => 0);
-
-        foreach (var (project, snapshot) in projects)
-        {
-            foreach (var reference in snapshot.ProjectReferences)
-            {
-                if (projects.ContainsKey(reference))
-                    inDegree[project]++;
-            }
-        }
-
-        // start with projects that have no dependencies
-        var queue = new Queue<string>(inDegree.Where(x => x.Value == 0).Select(x => x.Key));
-
-        while (queue.TryDequeue(out var project))
-        {
-            yield return project;
-
-            // reduce in-degree for projects that depend on this one
-            foreach (var dependent in projects
-                         .Where(p => p.Value.ProjectReferences.Contains(project))
-                         .Select(p => p.Key))
-            {
-                if (--inDegree[dependent] == 0)
-                    queue.Enqueue(dependent);
-            }
-        }
-    }
 }

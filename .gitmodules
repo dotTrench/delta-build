@@ -1,0 +1,6 @@
+[submodule "fixtures/spectre.console"]
+	path = fixtures/spectre.console
+	url = https://github.com/spectreconsole/spectre.console.git
+[submodule "fixtures/MassTransit"]
+	path = fixtures/MassTransit
+	url = https://github.com/MassTransit/MassTransit.git

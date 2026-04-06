@@ -3,4 +3,5 @@
     <Project Path="tests/DeltaBuild.Tests/DeltaBuild.Tests.csproj" />
   </Folder>
   <Project Path="delta-build/delta-build.csproj" />
+  <Project Path="DeltaBuild.Benchmarks/DeltaBuild.Benchmarks.csproj" />
 </Solution>

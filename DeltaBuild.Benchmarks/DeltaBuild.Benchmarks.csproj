@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+
+    <PackageReference Include="Microsoft.Build" Version="17.11.48" ExcludeAssets="runtime" PrivateAssets="all"/>
+    <PackageReference Include="Microsoft.Build.Framework" Version="17.11.48" ExcludeAssets="runtime" PrivateAssets="all"/>
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.11.48" ExcludeAssets="runtime" PrivateAssets="all"/>
+    <PackageReference Include="Microsoft.NET.StringTools" Version="17.11.48" ExcludeAssets="runtime" PrivateAssets="all"/>
+    
+    <PackageReference Include="Microsoft.Build.Prediction" Version="1.2.36"/>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\delta-build\delta-build.csproj"/>
+  </ItemGroup>
+
+</Project>
