@@ -2,4 +2,8 @@
 
 using DeltaBuild.Benchmarks;
 
-BenchmarkRunner.Run<DiffCalculatorBenchmarks>(args: args);
+using Microsoft.Build.Locator;
+
+MSBuildLocator.RegisterDefaults();
+
+BenchmarkRunner.Run<SnapshotGeneratorBenchmarks>(args: args);
