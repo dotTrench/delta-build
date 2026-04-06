@@ -27,6 +27,16 @@ public sealed class GitRepository : IGitRepository
         return new GitWorktree(WorkingDirectory, directory, commitSha);
     }
 
+    public async Task<bool> IsShallowRepositoryAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await GitProcessRunner.RunCmd(
+            WorkingDirectory,
+            ["rev-parse", "--is-shallow-repository"],
+            cancellationToken
+        );
+        return result.ExitCode == 0 && result.Stdout.TrimEnd() == "true";
+    }
+
     public async Task<string?> LookupCommitShaAsync(string reference, CancellationToken cancellationToken = default)
     {
         var result = await GitProcessRunner.RunCmd(
@@ -40,7 +50,7 @@ public sealed class GitRepository : IGitRepository
             return null;
         }
 
-        return result.Stdout.TrimEnd('\r', '\n');
+        return result.Stdout.TrimEnd();
     }
 
 
@@ -56,7 +66,7 @@ public sealed class GitRepository : IGitRepository
             return null;
         }
 
-        var path = result.Stdout.TrimEnd('\r', '\n');
+        var path = result.Stdout.TrimEnd();
 
 
         return new GitRepository(path);

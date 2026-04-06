@@ -69,7 +69,7 @@ public sealed class SnapshotCommand : AsyncCommand<SnapshotCommand.Settings>
         var repo = await GitRepository.DiscoverAsync(_environment.WorkingDirectory, cancellationToken);
         if (repo is null)
         {
-            _console.WriteLine("[red]Unable to find git repository[/]");
+            _console.MarkupLine("[red]Unable to find git repository[/]");
             return 1;
         }
 
@@ -77,8 +77,21 @@ public sealed class SnapshotCommand : AsyncCommand<SnapshotCommand.Settings>
 
         if (sha is null)
         {
-            _console.WriteLine($"[red]Unable to find commit '{settings.Commit}'[/]");
+            _console.MarkupLineInterpolated($"[red]Unable to find commit '{settings.Commit}'[/]");
             return 1;
+        }
+
+        if (await repo.IsShallowRepositoryAsync(cancellationToken))
+        {
+            var headSha = await repo.LookupCommitShaAsync("HEAD", cancellationToken);
+            if (sha != headSha)
+            {
+                _console.MarkupLine(
+                    "[yellow]Warning: This repository is a shallow clone. " +
+                    "Snapshotting a commit other than HEAD may fail if the target commit has not been fetched. " +
+                    "Ensure the repository has sufficient depth.[/]"
+                );
+            }
         }
 
 

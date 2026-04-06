@@ -155,6 +155,23 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
             return 1;
         }
 
+        if (await repo.IsShallowRepositoryAsync(cancellationToken))
+        {
+            var headSha = await repo.LookupCommitShaAsync("HEAD", cancellationToken);
+
+            var isUnsafe = await IsShallowUnsafeAsync(repo, settings.Base, headSha, cancellationToken) ||
+                           await IsShallowUnsafeAsync(repo, settings.Head, headSha, cancellationToken);
+
+            if (isUnsafe)
+            {
+                _console.MarkupLine(
+                    "[yellow]Warning: This repository is a shallow clone. " +
+                    "Diffing against commit references may fail if the target commit has not been fetched. " +
+                    "Consider using a snapshot file instead, or ensure the repository has sufficient depth.[/]"
+                );
+            }
+        }
+
         var resolver = new SnapshotResolver(repo, _environment, _stdin);
 
 
@@ -255,6 +272,20 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
         };
     }
 
+
+    private static async Task<bool> IsShallowUnsafeAsync(
+        GitRepository repo,
+        string value,
+        string? headSha,
+        CancellationToken cancellationToken
+    )
+    {
+        if (value == "-" || File.Exists(value))
+            return false;
+
+        var sha = await repo.LookupCommitShaAsync(value, cancellationToken);
+        return sha != headSha;
+    }
 
     private async Task<Snapshot?> ResolveSnapshotAsync(
         SnapshotResolver resolver,
