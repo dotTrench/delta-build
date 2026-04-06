@@ -2,7 +2,7 @@ using LibGit2Sharp;
 
 namespace DeltaBuild.Cli.Core.Git;
 
-public sealed class LibGit2Worktree : IWorktree
+public sealed class LibGit2Worktree : IWorktree, IDisposable
 {
     private readonly Repository _parent;
     private readonly Worktree _worktree;
@@ -68,6 +68,19 @@ public sealed class LibGit2Worktree : IWorktree
                         break;
                 }
             }
+        }
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        try
+        {
+            Dispose();
+            return ValueTask.CompletedTask;
+        }
+        catch (Exception exception)
+        {
+            return ValueTask.FromException(exception);
         }
     }
 }

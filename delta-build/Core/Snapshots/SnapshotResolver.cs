@@ -27,13 +27,13 @@ public sealed class SnapshotResolver(IGitRepository repository, IEnvironment env
             return new SnapshotResolverResult.Success(snapshot);
         }
 
-        var sha = repository.LookupCommitSha(value);
+        var sha = await repository.LookupCommitShaAsync(value, cancellationToken);
         if (sha is null)
             return new SnapshotResolverResult.CommitNotFound(value);
 
         var relativeWorkingDirectory = Path.GetRelativePath(repository.WorkingDirectory, environment.WorkingDirectory);
 
-        using var worktree = repository.CreateWorktree(sha);
+        await using var worktree = await repository.CreateWorktreeAsync(sha, cancellationToken);
 
         IReadOnlyCollection<string> resolvedEntrypoints;
         if (entrypoints is { Count: > 0 })
@@ -70,6 +70,7 @@ public sealed class SnapshotResolver(IGitRepository repository, IEnvironment env
 
         using var projectCollection = new ProjectCollection();
         var graph = new ProjectGraph(resolvedEntrypoints, projectCollection);
-        return new SnapshotResolverResult.Success(await SnapshotGenerator.GenerateSnapshot(graph, worktree, cancellationToken));
+        return new SnapshotResolverResult.Success(
+            await SnapshotGenerator.GenerateSnapshot(graph, worktree, cancellationToken));
     }
 }

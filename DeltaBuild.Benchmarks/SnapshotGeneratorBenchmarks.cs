@@ -18,7 +18,7 @@ public class SnapshotGeneratorBenchmarks
 
     private ProjectGraph _graph = null!;
     private LibGit2Repository _repo = null!;
-    private IWorktree _workTree = null!;
+    private LibGit2Worktree _workTree = null!;
 
     [Params("fixtures/spectre.console/src/Spectre.Console.slnx", "fixtures/MassTransit/MassTransit.sln")]
     public required string Entrypoint { get; set; }
@@ -32,7 +32,7 @@ public class SnapshotGeneratorBenchmarks
         var path = Path.Combine(root, Entrypoint);
         _graph = new ProjectGraph(path);
         _repo = LibGit2Repository.Discover(path) ?? throw new InvalidOperationException();
-        _workTree = _repo.CreateWorktree("HEAD");
+        _workTree = (LibGit2Worktree)_repo.CreateWorktree("HEAD");
     }
 
     [GlobalCleanup]

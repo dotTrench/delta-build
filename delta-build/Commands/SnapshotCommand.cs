@@ -85,7 +85,7 @@ public sealed class SnapshotCommand : AsyncCommand<SnapshotCommand.Settings>
         var relativeWorkingDirectory = Path.GetRelativePath(repo.WorkingDirectory, _environment.WorkingDirectory);
 
 
-        using var worktree = repo.CreateWorktree(sha);
+        await using var worktree = await repo.CreateWorktreeAsync(sha, cancellationToken);
 
         IReadOnlyCollection<string> entrypoints;
         if (settings.Entrypoints is { Length: > 0 })

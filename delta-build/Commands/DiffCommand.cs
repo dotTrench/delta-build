@@ -149,7 +149,7 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
         CancellationToken cancellationToken
     )
     {
-        using var repo = LibGit2Repository.Discover(_environment.WorkingDirectory);
+        var repo = await GitRepository.DiscoverAsync(_environment.WorkingDirectory, cancellationToken);
         if (repo is null)
         {
             return 1;

@@ -2,7 +2,7 @@ using LibGit2Sharp;
 
 namespace DeltaBuild.Cli.Core.Git;
 
-public sealed class LibGit2Repository : IGitRepository
+public sealed class LibGit2Repository : IGitRepository, IDisposable
 {
     private readonly Repository _repository;
 

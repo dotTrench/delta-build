@@ -1,6 +1,6 @@
 namespace DeltaBuild.Cli.Core.Git;
 
-public interface IWorktree : IDisposable
+public interface IWorktree : IAsyncDisposable
 {
     string WorkingDirectory { get; }
     string Commit { get; }
