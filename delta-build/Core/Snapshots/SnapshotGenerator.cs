@@ -85,7 +85,7 @@ public static class SnapshotGenerator
         public IEnumerable<SnapshotProject> GetProjects(ProjectGraph graph)
         {
             var order = new Dictionary<string, int>();
-            foreach (var (node, i) in graph.ProjectNodesTopologicallySorted.Select((node, i) => (node, i)))
+            foreach (var node in graph.ProjectNodesTopologicallySorted)
             {
                 var collector = _collectors.GetOrAdd(node.ProjectInstance.FullPath, new ProjectCollector());
                 var references = node.ProjectReferences.Select(it =>
@@ -94,8 +94,17 @@ public static class SnapshotGenerator
                     )
                 );
                 collector.AddProjectReferences(references);
+                if (order.ContainsKey(node.ProjectInstance.FullPath))
+                {
+                    continue;
+                }
 
-                order.TryAdd(node.ProjectInstance.FullPath, i);
+                var depth = node.ProjectReferences
+                    .Select(r => order[r.ProjectInstance.FullPath])
+                    .DefaultIfEmpty(-1)
+                    .Max() + 1;
+
+                order.TryAdd(node.ProjectInstance.FullPath, depth);
             }
 
             return _collectors

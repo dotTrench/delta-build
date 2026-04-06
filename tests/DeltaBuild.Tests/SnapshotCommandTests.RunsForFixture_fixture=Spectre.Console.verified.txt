@@ -71,8 +71,33 @@
       ]
     },
     {
+      path: src/Spectre.Console.Ansi.Tests/Spectre.Console.Ansi.Tests.csproj,
+      topologicalOrder: 2,
+      inputFiles: {
+        .editorconfig: 9270121542085e39b13a8908c48f3579368522ee,
+        global.json: e7e2df81de24528ef9dacbca6db644d87694691f,
+        resources/spectre.snk: 16a16ed4478aed1c3fb084181ccec9359ee2f837,
+        src/.editorconfig: 2b483efaa50d9dc249c459ae3a3870f6ff16e589,
+        src/Directory.Build.props: 86dd3c7e11afd9707b4e70e3f8f5a0050d9513ac,
+        src/Directory.Packages.props: 119abc46f603c6cd77f0e105ac7d5aa1243f8069,
+        src/Spectre.Console.Ansi.Tests/AnsiMarkupTests.cs: a503b97867876db1dd0a5f3fa22c915f8d2d99e9,
+        src/Spectre.Console.Ansi.Tests/AnsiWriterTests.cs: 8739cebdda494ce582e8dea0c73a969bb53da1c0,
+        src/Spectre.Console.Ansi.Tests/ColorSystemTests.cs: 13c36203392a164c31b0352b8244b6401c7a5b28,
+        src/Spectre.Console.Ansi.Tests/ColorTests.cs: 1539cf2a6873dc8b8dc9cae799ba508baedb09fd,
+        src/Spectre.Console.Ansi.Tests/Fixtures/AnsiFixture.cs: 45303ecaf434526bdd96891b5f257b312b53d1e8,
+        src/Spectre.Console.Ansi.Tests/Properties/Usings.cs: 573ebcbb57a11bdf81ff4a8fa76d787764a1b7ad,
+        src/Spectre.Console.Ansi.Tests/Spectre.Console.Ansi.Tests.csproj: c5d6b8279c5f8353547207b71a1e47bebc9e218a,
+        src/Spectre.Console.Ansi.Tests/StyleTests.cs: 408a9e1272ad55c2745f50a266f29a0e4cbf8f89
+      },
+      projectReferences: [
+        src/Spectre.Console.Ansi.Tests/Spectre.Console.Ansi.Tests.csproj,
+        src/Spectre.Console.Ansi/Spectre.Console.Ansi.csproj,
+        src/Spectre.Console.SourceGenerator/Spectre.Console.SourceGenerator.csproj
+      ]
+    },
+    {
       path: src/Spectre.Console/Spectre.Console.csproj,
-      topologicalOrder: 6,
+      topologicalOrder: 2,
       inputFiles: {
         .editorconfig: 9270121542085e39b13a8908c48f3579368522ee,
         global.json: e7e2df81de24528ef9dacbca6db644d87694691f,
@@ -375,8 +400,56 @@
       ]
     },
     {
+      path: src/Benchmarks/Benchmarks.csproj,
+      topologicalOrder: 3,
+      inputFiles: {
+        .editorconfig: 9270121542085e39b13a8908c48f3579368522ee,
+        global.json: e7e2df81de24528ef9dacbca6db644d87694691f,
+        resources/spectre.snk: 16a16ed4478aed1c3fb084181ccec9359ee2f837,
+        src/.editorconfig: 2b483efaa50d9dc249c459ae3a3870f6ff16e589,
+        src/Benchmarks/BenchmarkDotNet.Artifacts/results/Benchmarks.AnsiBenchmarks-report-github.md: 8f255ee82417570644ae2258f623193b7ffc1b41,
+        src/Benchmarks/BenchmarkDotNet.Artifacts/results/Benchmarks.RenderBenchmarks-report-github.md: 16f9d10496525ae1cd7cb08fd8e81decc0bb36a5,
+        src/Benchmarks/Benchmarks.csproj: cc72c0ba528abde0beed4011d566fbdd880875bd,
+        src/Benchmarks/EmojiBenchmarks.cs: 00b20258ec2607499e740ab8a13145b13bf29559,
+        src/Benchmarks/MarkupBenchmarks.cs: 5073aa26e6661852e6c5fc96bd1ae977d043d834,
+        src/Benchmarks/ParagraphBenchmarks.cs: f4b4bd7c3d623c1230c6e4d6f3bdbb3a94e0076d,
+        src/Benchmarks/Program.cs: 7a5ea47b352ca752f931b9e2773effa1890f4a3e,
+        src/Directory.Build.props: 86dd3c7e11afd9707b4e70e3f8f5a0050d9513ac,
+        src/Directory.Packages.props: 119abc46f603c6cd77f0e105ac7d5aa1243f8069
+      },
+      projectReferences: [
+        src/Benchmarks/Benchmarks.csproj,
+        src/Spectre.Console.Ansi/Spectre.Console.Ansi.csproj,
+        src/Spectre.Console.SourceGenerator/Spectre.Console.SourceGenerator.csproj,
+        src/Spectre.Console/Spectre.Console.csproj
+      ]
+    },
+    {
+      path: src/Extensions/Spectre.Console.ImageSharp/Spectre.Console.ImageSharp.csproj,
+      topologicalOrder: 3,
+      inputFiles: {
+        .editorconfig: 9270121542085e39b13a8908c48f3579368522ee,
+        global.json: e7e2df81de24528ef9dacbca6db644d87694691f,
+        resources/nuget/logo.png: eebe8db61da28607c5777b1438f29e95e052c74e,
+        resources/nuget/Spectre.Console.ImageSharp.md: 2203159dcd4225ed28326f4cb24774a88fa18909,
+        resources/spectre.snk: 16a16ed4478aed1c3fb084181ccec9359ee2f837,
+        src/.editorconfig: 2b483efaa50d9dc249c459ae3a3870f6ff16e589,
+        src/Directory.Build.props: 86dd3c7e11afd9707b4e70e3f8f5a0050d9513ac,
+        src/Directory.Packages.props: 119abc46f603c6cd77f0e105ac7d5aa1243f8069,
+        src/Extensions/Spectre.Console.ImageSharp/CanvasImage.cs: c4d36cc640b2b336f0ad8dbf8f51c4b69d3a8374,
+        src/Extensions/Spectre.Console.ImageSharp/CanvasImageExtensions.cs: 9402c9f4d588762caba931efca406ccf8ea354b8,
+        src/Extensions/Spectre.Console.ImageSharp/Spectre.Console.ImageSharp.csproj: ed1299d438f5f99de30a4472c093159ed5794d02
+      },
+      projectReferences: [
+        src/Extensions/Spectre.Console.ImageSharp/Spectre.Console.ImageSharp.csproj,
+        src/Spectre.Console.Ansi/Spectre.Console.Ansi.csproj,
+        src/Spectre.Console.SourceGenerator/Spectre.Console.SourceGenerator.csproj,
+        src/Spectre.Console/Spectre.Console.csproj
+      ]
+    },
+    {
       path: src/Extensions/Spectre.Console.Json/Spectre.Console.Json.csproj,
-      topologicalOrder: 11,
+      topologicalOrder: 3,
       inputFiles: {
         .editorconfig: 9270121542085e39b13a8908c48f3579368522ee,
         global.json: e7e2df81de24528ef9dacbca6db644d87694691f,
@@ -419,7 +492,7 @@
     },
     {
       path: src/Spectre.Console.Testing/Spectre.Console.Testing.csproj,
-      topologicalOrder: 15,
+      topologicalOrder: 3,
       inputFiles: {
         .editorconfig: 9270121542085e39b13a8908c48f3579368522ee,
         global.json: e7e2df81de24528ef9dacbca6db644d87694691f,
@@ -450,81 +523,8 @@
       ]
     },
     {
-      path: src/Extensions/Spectre.Console.ImageSharp/Spectre.Console.ImageSharp.csproj,
-      topologicalOrder: 21,
-      inputFiles: {
-        .editorconfig: 9270121542085e39b13a8908c48f3579368522ee,
-        global.json: e7e2df81de24528ef9dacbca6db644d87694691f,
-        resources/nuget/logo.png: eebe8db61da28607c5777b1438f29e95e052c74e,
-        resources/nuget/Spectre.Console.ImageSharp.md: 2203159dcd4225ed28326f4cb24774a88fa18909,
-        resources/spectre.snk: 16a16ed4478aed1c3fb084181ccec9359ee2f837,
-        src/.editorconfig: 2b483efaa50d9dc249c459ae3a3870f6ff16e589,
-        src/Directory.Build.props: 86dd3c7e11afd9707b4e70e3f8f5a0050d9513ac,
-        src/Directory.Packages.props: 119abc46f603c6cd77f0e105ac7d5aa1243f8069,
-        src/Extensions/Spectre.Console.ImageSharp/CanvasImage.cs: c4d36cc640b2b336f0ad8dbf8f51c4b69d3a8374,
-        src/Extensions/Spectre.Console.ImageSharp/CanvasImageExtensions.cs: 9402c9f4d588762caba931efca406ccf8ea354b8,
-        src/Extensions/Spectre.Console.ImageSharp/Spectre.Console.ImageSharp.csproj: ed1299d438f5f99de30a4472c093159ed5794d02
-      },
-      projectReferences: [
-        src/Extensions/Spectre.Console.ImageSharp/Spectre.Console.ImageSharp.csproj,
-        src/Spectre.Console.Ansi/Spectre.Console.Ansi.csproj,
-        src/Spectre.Console.SourceGenerator/Spectre.Console.SourceGenerator.csproj,
-        src/Spectre.Console/Spectre.Console.csproj
-      ]
-    },
-    {
-      path: src/Benchmarks/Benchmarks.csproj,
-      topologicalOrder: 24,
-      inputFiles: {
-        .editorconfig: 9270121542085e39b13a8908c48f3579368522ee,
-        global.json: e7e2df81de24528ef9dacbca6db644d87694691f,
-        resources/spectre.snk: 16a16ed4478aed1c3fb084181ccec9359ee2f837,
-        src/.editorconfig: 2b483efaa50d9dc249c459ae3a3870f6ff16e589,
-        src/Benchmarks/BenchmarkDotNet.Artifacts/results/Benchmarks.AnsiBenchmarks-report-github.md: 8f255ee82417570644ae2258f623193b7ffc1b41,
-        src/Benchmarks/BenchmarkDotNet.Artifacts/results/Benchmarks.RenderBenchmarks-report-github.md: 16f9d10496525ae1cd7cb08fd8e81decc0bb36a5,
-        src/Benchmarks/Benchmarks.csproj: cc72c0ba528abde0beed4011d566fbdd880875bd,
-        src/Benchmarks/EmojiBenchmarks.cs: 00b20258ec2607499e740ab8a13145b13bf29559,
-        src/Benchmarks/MarkupBenchmarks.cs: 5073aa26e6661852e6c5fc96bd1ae977d043d834,
-        src/Benchmarks/ParagraphBenchmarks.cs: f4b4bd7c3d623c1230c6e4d6f3bdbb3a94e0076d,
-        src/Benchmarks/Program.cs: 7a5ea47b352ca752f931b9e2773effa1890f4a3e,
-        src/Directory.Build.props: 86dd3c7e11afd9707b4e70e3f8f5a0050d9513ac,
-        src/Directory.Packages.props: 119abc46f603c6cd77f0e105ac7d5aa1243f8069
-      },
-      projectReferences: [
-        src/Benchmarks/Benchmarks.csproj,
-        src/Spectre.Console.Ansi/Spectre.Console.Ansi.csproj,
-        src/Spectre.Console.SourceGenerator/Spectre.Console.SourceGenerator.csproj,
-        src/Spectre.Console/Spectre.Console.csproj
-      ]
-    },
-    {
-      path: src/Spectre.Console.Ansi.Tests/Spectre.Console.Ansi.Tests.csproj,
-      topologicalOrder: 27,
-      inputFiles: {
-        .editorconfig: 9270121542085e39b13a8908c48f3579368522ee,
-        global.json: e7e2df81de24528ef9dacbca6db644d87694691f,
-        resources/spectre.snk: 16a16ed4478aed1c3fb084181ccec9359ee2f837,
-        src/.editorconfig: 2b483efaa50d9dc249c459ae3a3870f6ff16e589,
-        src/Directory.Build.props: 86dd3c7e11afd9707b4e70e3f8f5a0050d9513ac,
-        src/Directory.Packages.props: 119abc46f603c6cd77f0e105ac7d5aa1243f8069,
-        src/Spectre.Console.Ansi.Tests/AnsiMarkupTests.cs: a503b97867876db1dd0a5f3fa22c915f8d2d99e9,
-        src/Spectre.Console.Ansi.Tests/AnsiWriterTests.cs: 8739cebdda494ce582e8dea0c73a969bb53da1c0,
-        src/Spectre.Console.Ansi.Tests/ColorSystemTests.cs: 13c36203392a164c31b0352b8244b6401c7a5b28,
-        src/Spectre.Console.Ansi.Tests/ColorTests.cs: 1539cf2a6873dc8b8dc9cae799ba508baedb09fd,
-        src/Spectre.Console.Ansi.Tests/Fixtures/AnsiFixture.cs: 45303ecaf434526bdd96891b5f257b312b53d1e8,
-        src/Spectre.Console.Ansi.Tests/Properties/Usings.cs: 573ebcbb57a11bdf81ff4a8fa76d787764a1b7ad,
-        src/Spectre.Console.Ansi.Tests/Spectre.Console.Ansi.Tests.csproj: c5d6b8279c5f8353547207b71a1e47bebc9e218a,
-        src/Spectre.Console.Ansi.Tests/StyleTests.cs: 408a9e1272ad55c2745f50a266f29a0e4cbf8f89
-      },
-      projectReferences: [
-        src/Spectre.Console.Ansi.Tests/Spectre.Console.Ansi.Tests.csproj,
-        src/Spectre.Console.Ansi/Spectre.Console.Ansi.csproj,
-        src/Spectre.Console.SourceGenerator/Spectre.Console.SourceGenerator.csproj
-      ]
-    },
-    {
       path: src/Spectre.Console.Tests/Spectre.Console.Tests.csproj,
-      topologicalOrder: 30,
+      topologicalOrder: 4,
       inputFiles: {
         .editorconfig: 9270121542085e39b13a8908c48f3579368522ee,
         global.json: e7e2df81de24528ef9dacbca6db644d87694691f,
