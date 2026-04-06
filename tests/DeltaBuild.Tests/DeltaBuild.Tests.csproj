@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\delta-build\delta-build.csproj"/>
+    <ProjectReference Include="..\DeltaBuild.TestUtils\DeltaBuild.TestUtils.csproj" />
   </ItemGroup>
 
 </Project>

@@ -15,44 +15,25 @@ public static class SnapshotGenerator
         .Where(it => it.GetType() != typeof(ProjectFileAndImportsGraphPredictor))
         .ToArray();
 
-    public static Snapshot GenerateSnapshot(ProjectGraph projectGraph, IWorktree workTree)
+    public static async Task<Snapshot> GenerateSnapshot(
+        ProjectGraph projectGraph,
+        IWorktree workTree,
+        CancellationToken cancellationToken = default
+    )
     {
+        var objectIds = await workTree.CollectTreeObjectIdsAsync(cancellationToken);
         var executor = new ProjectGraphPredictionExecutor(
             GraphPredictors,
             ProjectPredictors.AllProjectPredictors
         );
 
 
-        var collector = new Collector(workTree);
+        var collector = new Collector(workTree, objectIds);
         executor.PredictInputsAndOutputs(projectGraph, collector);
 
         var projects = collector.GetProjects(projectGraph).ToList();
 
-        var hashes = new Dictionary<string, string>();
-        foreach (var file in projects.SelectMany(p => p.InputFiles))
-        {
-            if (hashes.ContainsKey(file))
-            {
-                continue;
-            }
-
-            var sha = workTree.GetFileSha(file);
-            if (sha is null)
-            {
-                // Untracked file, this file is probably generated on build and probably belongs in .gitignore.
-                // We'll just skip the hash for this for now
-                continue;
-            }
-
-            hashes.Add(file, sha);
-        }
-
-        return new Snapshot
-        {
-            Commit = workTree.Commit,
-            Projects = projects,
-            FileHashes = hashes.OrderBy(it => it.Key).ToDictionary()
-        };
+        return new Snapshot { Commit = workTree.Commit, Projects = projects };
     }
 
 
@@ -60,10 +41,12 @@ public static class SnapshotGenerator
     {
         private readonly IWorktree _worktree;
         private readonly ConcurrentDictionary<string, ProjectCollector> _collectors = new();
+        private readonly IReadOnlyDictionary<string, string> _objectIds;
 
-        public Collector(IWorktree worktree)
+        public Collector(IWorktree worktree, IReadOnlyDictionary<string, string> objectIds)
         {
             _worktree = worktree;
+            _objectIds = objectIds;
         }
 
         public void AddInputFile(string path, ProjectInstance projectInstance, string predictorName)
@@ -76,15 +59,14 @@ public static class SnapshotGenerator
             }
 
             var relativePath = PathHelpers.Normalize(Path.GetRelativePath(_worktree.WorkingDirectory, fullPath));
-
-            if (_worktree.IsFileIgnored(relativePath))
+            if (!_objectIds.TryGetValue(relativePath, out var sha))
             {
                 return;
             }
 
             var collector = _collectors.GetOrAdd(projectInstance.FullPath, new ProjectCollector());
 
-            collector.AddInputFile(relativePath);
+            collector.AddInputFile(relativePath, sha);
         }
 
         public void AddInputDirectory(string path, ProjectInstance projectInstance, string predictorName)
@@ -122,12 +104,10 @@ public static class SnapshotGenerator
                         Path = PathHelpers.Normalize(Path.GetRelativePath(_worktree.WorkingDirectory, it.Key)),
                         TopologicalOrder = order.GetValueOrDefault(it.Key, int.MaxValue),
                         InputFiles = it.Value.GetInputFiles()
-                            .Order()
-                            .Select(PathHelpers.Normalize)
-                            .ToList(),
+                            .OrderBy(file => file.Key)
+                            .ToDictionary(),
                         ProjectReferences = it.Value.GetProjectReferences()
                             .Order()
-                            .Select(PathHelpers.Normalize)
                             .ToList()
                     }
                 )
@@ -137,24 +117,17 @@ public static class SnapshotGenerator
 
         private sealed class ProjectCollector
         {
-            private readonly Lock _inputFilesLock = new();
-            private readonly HashSet<string> _inputFiles = [];
+            private readonly ConcurrentDictionary<string, string> _inputFiles = [];
             private readonly HashSet<string> _projectReferences = [];
 
-            public void AddInputFile(string path)
+            public void AddInputFile(string path, string sha)
             {
-                lock (_inputFilesLock)
-                {
-                    _inputFiles.Add(path);
-                }
+                _inputFiles.TryAdd(path, sha);
             }
 
-            public IReadOnlyCollection<string> GetInputFiles()
+            public IReadOnlyDictionary<string, string> GetInputFiles()
             {
-                lock (_inputFilesLock)
-                {
-                    return _inputFiles;
-                }
+                return _inputFiles;
             }
 
             public IReadOnlyCollection<string> GetProjectReferences() => _projectReferences;

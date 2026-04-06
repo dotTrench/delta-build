@@ -8,8 +8,6 @@ public static class DiffCalculator
 {
     public static DiffResult Calculate(Snapshot baseSnapshot, Snapshot headSnapshot)
     {
-        var fileStates = CalculateFileStates(baseSnapshot, headSnapshot);
-
         var baseProjects = baseSnapshot.Projects.ToFrozenDictionary(it => it.Path);
         var headProjects = headSnapshot.Projects.ToFrozenDictionary(it => it.Path);
 
@@ -25,8 +23,7 @@ public static class DiffCalculator
                     [],
                     GetFileDiffs(
                         baseProject: null,
-                        headProject: project,
-                        fileStates
+                        headProject: project
                     ));
             }
         }
@@ -39,7 +36,7 @@ public static class DiffCalculator
                     project.Path,
                     ProjectState.Removed,
                     [],
-                    GetFileDiffs(baseProject: project, headProject: null, fileStates)
+                    GetFileDiffs(baseProject: project, headProject: null)
                 );
             }
         }
@@ -54,8 +51,7 @@ public static class DiffCalculator
         {
             var fileDiffs = GetFileDiffs(
                 baseProjects[project],
-                headProjects[project],
-                fileStates
+                headProjects[project]
             );
 
 
@@ -80,37 +76,41 @@ public static class DiffCalculator
         return new DiffResult(projects);
     }
 
-    private static FrozenDictionary<string, FileState> CalculateFileStates(Snapshot baseSnapshot, Snapshot headSnapshot)
-    {
-        var allFiles = baseSnapshot.FileHashes.Keys.Union(headSnapshot.FileHashes.Keys);
-
-        return allFiles.ToFrozenDictionary(file => file, file =>
-        {
-            baseSnapshot.FileHashes.TryGetValue(file, out var baseHash);
-            headSnapshot.FileHashes.TryGetValue(file, out var headHash);
-
-            return (baseHash, headHash) switch
-            {
-                (null, not null) => FileState.Added,
-                (not null, null) => FileState.Deleted,
-                _ when baseHash != headHash => FileState.Modified,
-                _ => FileState.Unchanged
-            };
-        });
-    }
-
     private static List<FileDiffResult> GetFileDiffs(
         SnapshotProject? baseProject,
-        SnapshotProject? headProject,
-        FrozenDictionary<string, FileState> fileStates
+        SnapshotProject? headProject
     )
     {
-        var allFiles = (baseProject?.InputFiles ?? []).Union(headProject?.InputFiles ?? []);
+        if (baseProject is null && headProject is null)
+            return [];
 
-        return allFiles
-            .Select(f => new FileDiffResult(f, fileStates.GetValueOrDefault(f, FileState.Unchanged)))
-            .OrderBy(f => f.Path)
+        var baseFiles = baseProject?.InputFiles.Keys ?? [];
+        var headFiles = headProject?.InputFiles.Keys ?? [];
+
+        return headFiles.Union(baseFiles)
+            .Select(it => new FileDiffResult(it, GetFileState(it)))
+            .OrderBy(it => it.Path)
             .ToList();
+
+        FileState GetFileState(string path)
+        {
+            if (headProject is null || !headProject.InputFiles.TryGetValue(path, out var headSha))
+            {
+                return FileState.Deleted;
+            }
+
+            if (baseProject is null || !baseProject.InputFiles.TryGetValue(path, out var baseSha))
+            {
+                return FileState.Added;
+            }
+
+            if (headSha != baseSha)
+            {
+                return FileState.Modified;
+            }
+
+            return FileState.Unchanged;
+        }
     }
 
     private static bool IsModified(IReadOnlyCollection<FileDiffResult> files) =>

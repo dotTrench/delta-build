@@ -1,4 +1,3 @@
-using DeltaBuild.Cli.Core;
 using DeltaBuild.Cli.Core.Diff;
 using DeltaBuild.Cli.Core.Snapshots;
 
@@ -6,15 +5,11 @@ namespace DeltaBuild.Tests;
 
 public class DiffCalculatorTests
 {
-    private static Snapshot EmptySnapshot() => new()
-    {
-        Commit = "abc123", Projects = [], FileHashes = new Dictionary<string, string>()
-    };
+    private static Snapshot EmptySnapshot() => new() { Commit = "abc123", Projects = [] };
 
     private static Snapshot BuildSnapshot(
         string commit,
-        Dictionary<string, (string[] InputFiles, string[] ProjectReferences)> projects,
-        Dictionary<string, string> fileHashes
+        Dictionary<string, (Dictionary<string, string> InputFiles, string[] ProjectReferences)> projects
     )
     {
         return new Snapshot
@@ -27,18 +22,17 @@ public class DiffCalculatorTests
                 InputFiles = it.Value.InputFiles,
                 ProjectReferences = it.Value.ProjectReferences
             }).ToList(),
-            FileHashes = fileHashes
         };
     }
 
     [Test]
     public async Task Unchanged_WhenSnapshotsAreIdentical()
     {
-        var @base = BuildSnapshot("abc", new() { ["src/Core/Core.csproj"] = (["src/Core/Core.csproj"], []) },
-            new() { ["src/Core/Core.csproj"] = "hash1" });
+        var @base = BuildSnapshot("abc",
+            new() { ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1" }, []) });
 
-        var head = BuildSnapshot("def", new() { ["src/Core/Core.csproj"] = (["src/Core/Core.csproj"], []) },
-            new() { ["src/Core/Core.csproj"] = "hash1" });
+        var head = BuildSnapshot("def",
+            new() { ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1" }, []) });
 
         var result = DiffCalculator.Calculate(@base, head);
 
@@ -50,12 +44,24 @@ public class DiffCalculatorTests
     public async Task Modified_WhenInputFileHashChanges()
     {
         var @base = BuildSnapshot("abc",
-            new() { ["src/Core/Core.csproj"] = (["src/Core/Core.csproj", "src/Core/Foo.cs"], []) },
-            new() { ["src/Core/Core.csproj"] = "hash1", ["src/Core/Foo.cs"] = "hash2" });
+            new()
+            {
+                ["src/Core/Core.csproj"] = (new()
+                {
+                    ["src/Core/Core.csproj"] = "hash1",
+                    ["src/Core/Foo.cs"] = "hash2"
+                }, [])
+            });
 
         var head = BuildSnapshot("def",
-            new() { ["src/Core/Core.csproj"] = (["src/Core/Core.csproj", "src/Core/Foo.cs"], []) },
-            new() { ["src/Core/Core.csproj"] = "hash1", ["src/Core/Foo.cs"] = "hash3" });
+            new()
+            {
+                ["src/Core/Core.csproj"] = (new()
+                {
+                    ["src/Core/Core.csproj"] = "hash1",
+                    ["src/Core/Foo.cs"] = "hash3"
+                }, [])
+            });
 
         var result = DiffCalculator.Calculate(@base, head);
 
@@ -69,21 +75,15 @@ public class DiffCalculatorTests
         var @base = BuildSnapshot("abc",
             new()
             {
-                ["src/Core/Core.csproj"] = (["src/Core/Core.csproj"], []),
-                ["src/App/App.csproj"] = (["src/App/App.csproj"], ["src/Core/Core.csproj"])
-            },
-            new() { ["src/Core/Core.csproj"] = "hash1", ["src/App/App.csproj"] = "hash2" });
+                ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1" }, []),
+                ["src/App/App.csproj"] = (new() { ["src/App/App.csproj"] = "hash2" }, ["src/Core/Core.csproj"])
+            });
 
         var head = BuildSnapshot("def",
             new()
             {
-                ["src/Core/Core.csproj"] = (["src/Core/Core.csproj"], []),
-                ["src/App/App.csproj"] = (["src/App/App.csproj"], ["src/Core/Core.csproj"])
-            },
-            new()
-            {
-                ["src/Core/Core.csproj"] = "hash3", // changed
-                ["src/App/App.csproj"] = "hash2"
+                ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash3" }, []), // changed
+                ["src/App/App.csproj"] = (new() { ["src/App/App.csproj"] = "hash2" }, ["src/Core/Core.csproj"])
             });
 
         var result = DiffCalculator.Calculate(@base, head);
@@ -100,32 +100,20 @@ public class DiffCalculatorTests
     public async Task Affected_WhenTransitiveDependencyIsModified()
     {
         var @base = BuildSnapshot("abc", new()
-            {
-                ["src/Project1/Project1.csproj"] = (["src/Project1/Project1.csproj"], []),
-                ["src/Project2/Project2.csproj"] = (["src/Project2/Project2.csproj"], ["src/Project1/Project1.csproj"]),
-                ["src/Project3/Project3.csproj"] = (["src/Project3/Project3.csproj"],
-                    ["src/Project2/Project2.csproj", "src/Project1/Project1.csproj"])
-            },
-            new()
-            {
-                ["src/Project1/Project1.csproj"] = "hash1",
-                ["src/Project2/Project2.csproj"] = "hash2",
-                ["src/Project3/Project3.csproj"] = "hash3"
-            });
+        {
+            ["src/Project1/Project1.csproj"] = (new() { ["src/Project1/Project1.csproj"] = "hash1" }, []),
+            ["src/Project2/Project2.csproj"] = (new() { ["src/Project2/Project2.csproj"] = "hash2" }, ["src/Project1/Project1.csproj"]),
+            ["src/Project3/Project3.csproj"] = (new() { ["src/Project3/Project3.csproj"] = "hash3" },
+                ["src/Project2/Project2.csproj", "src/Project1/Project1.csproj"])
+        });
 
         var head = BuildSnapshot("def", new()
-            {
-                ["src/Project1/Project1.csproj"] = (["src/Project1/Project1.csproj"], []),
-                ["src/Project2/Project2.csproj"] = (["src/Project2/Project2.csproj"], ["src/Project1/Project1.csproj"]),
-                ["src/Project3/Project3.csproj"] = (["src/Project3/Project3.csproj"],
-                    ["src/Project2/Project2.csproj", "src/Project1/Project1.csproj"])
-            },
-            new()
-            {
-                ["src/Project1/Project1.csproj"] = "hash4", // changed
-                ["src/Project2/Project2.csproj"] = "hash2",
-                ["src/Project3/Project3.csproj"] = "hash3"
-            });
+        {
+            ["src/Project1/Project1.csproj"] = (new() { ["src/Project1/Project1.csproj"] = "hash4" }, []), // changed
+            ["src/Project2/Project2.csproj"] = (new() { ["src/Project2/Project2.csproj"] = "hash2" }, ["src/Project1/Project1.csproj"]),
+            ["src/Project3/Project3.csproj"] = (new() { ["src/Project3/Project3.csproj"] = "hash3" },
+                ["src/Project2/Project2.csproj", "src/Project1/Project1.csproj"])
+        });
 
         var result = DiffCalculator.Calculate(@base, head);
 
@@ -142,8 +130,8 @@ public class DiffCalculatorTests
     [Test]
     public async Task Added_WhenProjectExistsInHeadButNotBase()
     {
-        var head = BuildSnapshot("def", new() { ["src/Core/Core.csproj"] = (["src/Core/Core.csproj"], []) },
-            new() { ["src/Core/Core.csproj"] = "hash1" });
+        var head = BuildSnapshot("def",
+            new() { ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1" }, []) });
 
         var result = DiffCalculator.Calculate(EmptySnapshot(), head);
 
@@ -154,8 +142,8 @@ public class DiffCalculatorTests
     [Test]
     public async Task Removed_WhenProjectExistsInBaseButNotHead()
     {
-        var @base = BuildSnapshot("abc", new() { ["src/Core/Core.csproj"] = (["src/Core/Core.csproj"], []) },
-            new() { ["src/Core/Core.csproj"] = "hash1" });
+        var @base = BuildSnapshot("abc",
+            new() { ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1" }, []) });
 
         var result = DiffCalculator.Calculate(@base, EmptySnapshot());
 
@@ -166,12 +154,18 @@ public class DiffCalculatorTests
     [Test]
     public async Task Modified_WhenInputFileIsAdded()
     {
-        var @base = BuildSnapshot("abc", new() { ["src/Core/Core.csproj"] = (["src/Core/Core.csproj"], []) },
-            new() { ["src/Core/Core.csproj"] = "hash1" });
+        var @base = BuildSnapshot("abc",
+            new() { ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1" }, []) });
 
         var head = BuildSnapshot("def",
-            new() { ["src/Core/Core.csproj"] = (["src/Core/Core.csproj", "src/Core/Foo.cs"], []) },
-            new() { ["src/Core/Core.csproj"] = "hash1", ["src/Core/Foo.cs"] = "hash2" });
+            new()
+            {
+                ["src/Core/Core.csproj"] = (new()
+                {
+                    ["src/Core/Core.csproj"] = "hash1",
+                    ["src/Core/Foo.cs"] = "hash2"
+                }, [])
+            });
 
         var result = DiffCalculator.Calculate(@base, head);
 
@@ -183,12 +177,17 @@ public class DiffCalculatorTests
     public async Task Modified_WhenInputFileIsDeleted()
     {
         var @base = BuildSnapshot("abc",
-            new() { ["src/Core/Core.csproj"] = (["src/Core/Core.csproj", "src/Core/Foo.cs"], []) },
-            new() { ["src/Core/Core.csproj"] = "hash1", ["src/Core/Foo.cs"] = "hash2" });
+            new()
+            {
+                ["src/Core/Core.csproj"] = (new()
+                {
+                    ["src/Core/Core.csproj"] = "hash1",
+                    ["src/Core/Foo.cs"] = "hash2"
+                }, [])
+            });
 
-        var head = BuildSnapshot("def", 
-            new() { ["src/Core/Core.csproj"] = (["src/Core/Core.csproj"], []) },
-            new() { ["src/Core/Core.csproj"] = "hash1" });
+        var head = BuildSnapshot("def",
+            new() { ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1" }, []) });
 
         var result = DiffCalculator.Calculate(@base, head);
 
@@ -202,14 +201,15 @@ public class DiffCalculatorTests
         var @base = BuildSnapshot("abc",
             new()
             {
-                ["src/Core/Core.csproj"] = (["src/Core/Core.csproj"], []),
-                ["src/App/App.csproj"] = (["src/App/App.csproj"], ["src/Core/Core.csproj"])
-            },
-            new() { ["src/Core/Core.csproj"] = "hash1", ["src/App/App.csproj"] = "hash2" });
+                ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1" }, []),
+                ["src/App/App.csproj"] = (new() { ["src/App/App.csproj"] = "hash2" }, ["src/Core/Core.csproj"])
+            });
 
         var head = BuildSnapshot("def",
-            new() { ["src/App/App.csproj"] = (["src/App/App.csproj"], ["src/Core/Core.csproj"]) },
-            new() { ["src/App/App.csproj"] = "hash2" });
+            new()
+            {
+                ["src/App/App.csproj"] = (new() { ["src/App/App.csproj"] = "hash2" }, ["src/Core/Core.csproj"])
+            });
 
         var result = DiffCalculator.Calculate(@base, head);
 

@@ -6,5 +6,11 @@ public interface IWorktree : IDisposable
     string Commit { get; }
 
     string? GetFileSha(string relativePath);
-    bool IsFileIgnored(string relativePath);
+
+    /// <summary>
+    /// Collect all blob object-ids for the current tee
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task<IReadOnlyDictionary<string, string>> CollectTreeObjectIdsAsync(CancellationToken cancellationToken = default);
 }

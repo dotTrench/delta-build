@@ -3,6 +3,7 @@ using DeltaBuild.Cli.Commands;
 using DeltaBuild.Cli.Core;
 using DeltaBuild.Cli.Core.Snapshots;
 using DeltaBuild.Tests.Utils;
+using DeltaBuild.TestUtils;
 
 using LibGit2Sharp;
 
@@ -144,7 +145,6 @@ public class SnapshotCommandTests
     public async Task WritesJsonToStandardOutput_WithMultiTargetedProject(CancellationToken cancellationToken)
     {
         using var repo = TestRepository.Create();
-        Repository.Init(repo.WorkingDirectory);
 
         repo
             .CreateCsproj("src/Core/Core.csproj", x =>
@@ -176,10 +176,6 @@ public class SnapshotCommandTests
             await Assert.That(snapshot.Projects).HasSingleItem(it => it.Path == "src/App/App.csproj");
 
             await Assert.That(coreProject.InputFiles).IsEquivalentTo(coreProject.InputFiles.Distinct());
-
-            // no duplicate file hashes
-            await Assert.That(snapshot.FileHashes).ContainsKey("src/Core/Core.csproj");
-            await Assert.That(snapshot.FileHashes.Count).IsEquivalentTo(snapshot.FileHashes.Count);
         }
     }
 
@@ -202,15 +198,37 @@ public class SnapshotCommandTests
         await Assert.That(gitRepo.Branches.Count()).IsEqualTo(1);
     }
 
-    private static CommandAppTester BuildApp(TestRepository repo, InMemoryStandardOutput? stdout = null)
+    public static IEnumerable<Func<TestFixture>> Fixtures()
+    {
+        yield return () => TestFixtures.SpectreConsole;
+        yield return () => TestFixtures.MassTransit;
+    }
+
+    [Test]
+    [MethodDataSource(nameof(Fixtures))]
+    public async Task RunsForFixture(TestFixture fixture, CancellationToken cancellationToken)
+    {
+        var stdout = new InMemoryStandardOutput();
+        var app = BuildApp(fixture.Root, stdout);
+        var result = await app.RunAsync(["snapshot"], cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+
+        await VerifyJson(stdout.GetString());
+    }
+
+    private static CommandAppTester BuildApp(string workingDirectory, InMemoryStandardOutput? stdout = null)
     {
         var app = new CommandAppTester();
         app.Configure(c =>
         {
-            c.Settings.Registrar.RegisterInstance<IEnvironment>(new TestEnvironment(repo.WorkingDirectory));
+            c.Settings.Registrar.RegisterInstance<IEnvironment>(new TestEnvironment(workingDirectory));
             c.Settings.Registrar.RegisterInstance<IStandardOutput>(stdout ?? new InMemoryStandardOutput());
             c.AddCommand<SnapshotCommand>("snapshot");
         });
         return app;
     }
+
+    private static CommandAppTester BuildApp(TestRepository repository, InMemoryStandardOutput? stdout = null)
+        => BuildApp(repository.WorkingDirectory, stdout);
 }

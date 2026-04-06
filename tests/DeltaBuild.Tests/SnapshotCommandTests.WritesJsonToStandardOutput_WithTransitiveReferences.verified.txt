@@ -4,16 +4,16 @@
     {
       path: src/Project1/Project1.csproj,
       topologicalOrder: 0,
-      inputFiles: [
-        src/Project1/Project1.csproj
-      ]
+      inputFiles: {
+        src/Project1/Project1.csproj: a5b9e0e7b2064c00c77ea446ba2ddd6c1e3125a6
+      }
     },
     {
       path: src/Project2/Project2.csproj,
       topologicalOrder: 1,
-      inputFiles: [
-        src/Project2/Project2.csproj
-      ],
+      inputFiles: {
+        src/Project2/Project2.csproj: e505a745d14697cd65135852a1c3fd0d3a08b898
+      },
       projectReferences: [
         src/Project1/Project1.csproj
       ]
@@ -21,18 +21,13 @@
     {
       path: src/Project3/Project3.csproj,
       topologicalOrder: 2,
-      inputFiles: [
-        src/Project3/Project3.csproj
-      ],
+      inputFiles: {
+        src/Project3/Project3.csproj: cca9921c80252cf697909e8d489c00f87b30ea98
+      },
       projectReferences: [
         src/Project1/Project1.csproj,
         src/Project2/Project2.csproj
       ]
     }
-  ],
-  fileHashes: {
-    src/Project1/Project1.csproj: a5b9e0e7b2064c00c77ea446ba2ddd6c1e3125a6,
-    src/Project2/Project2.csproj: e505a745d14697cd65135852a1c3fd0d3a08b898,
-    src/Project3/Project3.csproj: cca9921c80252cf697909e8d489c00f87b30ea98
-  }
+  ]
 }
