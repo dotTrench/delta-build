@@ -31,28 +31,21 @@ public class DiffCalculatorBenchmarks
             _ => throw new ArgumentOutOfRangeException()
         };
 
-        var changedCount = Random.Shared.Next(0, _base.FileHashes.Count);
-        _head = ApplyChanges(_base, changedCount);
+        _head = ApplyChanges(_base);
     }
 
     [Benchmark]
     public DiffResult Calculate() => DiffCalculator.Calculate(_base, _head);
 
-    private static Snapshot ApplyChanges(Snapshot @base, int changedCount)
+    private static Snapshot ApplyChanges(Snapshot @base)
     {
-        var updatedHashes = new Dictionary<string, string>(@base.FileHashes);
-
-        foreach (var file in @base.FileHashes.Keys.Take(changedCount))
-            updatedHashes[file] = Guid.NewGuid().ToString("N");
-
-        return @base with { FileHashes = updatedHashes };
+        return @base;
     }
 
     // Project1 -> Project2 -> Project3 -> ...
     private static Snapshot GenerateLinear(int count)
     {
         var projects = new List<SnapshotProject>();
-        var hashes = new Dictionary<string, string>();
 
         for (var i = 0; i < count; i++)
         {
@@ -60,19 +53,20 @@ public class DiffCalculatorBenchmarks
             var refs = i > 0 ? [ProjectPath(i - 1)] : Array.Empty<string>();
             projects.Add(new SnapshotProject
             {
-                TopologicalOrder = i, Path = path, InputFiles = [path], ProjectReferences = refs
+                TopologicalOrder = i,
+                Path = path,
+                InputFiles = new Dictionary<string, string>() { [path] = Hash(i) },
+                ProjectReferences = refs
             });
-            hashes[path] = Hash(i);
         }
 
-        return BuildSnapshot(projects, hashes);
+        return BuildSnapshot(projects);
     }
 
     // Binary tree — each project depends on two children
     private static Snapshot GenerateTree(int count)
     {
         var projects = new List<SnapshotProject>();
-        var hashes = new Dictionary<string, string>();
 
         for (var i = 0; i < count; i++)
         {
@@ -87,13 +81,12 @@ public class DiffCalculatorBenchmarks
             {
                 Path = path,
                 TopologicalOrder = count - 1 - i, // reverse: leaves first, root last
-                InputFiles = [path],
+                InputFiles = new Dictionary<string, string> { [path] = Hash(i) },
                 ProjectReferences = refs.ToArray()
             });
-            hashes[path] = Hash(i);
         }
 
-        return BuildSnapshot(projects, hashes);
+        return BuildSnapshot(projects);
     }
 
     // First project is shared core, all others depend on it
@@ -101,55 +94,56 @@ public class DiffCalculatorBenchmarks
     private static Snapshot GenerateDiamond(int count)
     {
         var projects = new List<SnapshotProject>();
-        var hashes = new Dictionary<string, string>();
 
         var core = ProjectPath(0);
         projects.Add(new SnapshotProject
         {
-            Path = core, TopologicalOrder = 0, InputFiles = [core], ProjectReferences = []
+            Path = core,
+            TopologicalOrder = 0,
+            InputFiles = new Dictionary<string, string> { [core] = Hash(0) },
+            ProjectReferences = []
         });
-        hashes[core] = Hash(0);
 
         for (var i = 1; i < count; i++)
         {
             var path = ProjectPath(i);
             projects.Add(new SnapshotProject
             {
-                Path = path, TopologicalOrder = 1, InputFiles = [path], ProjectReferences = [core]
+                Path = path,
+                TopologicalOrder = 1,
+                InputFiles = new Dictionary<string, string> { [path] = Hash(i) },
+                ProjectReferences = [core]
             });
-            hashes[path] = Hash(i);
         }
 
-        return BuildSnapshot(projects, hashes);
+        return BuildSnapshot(projects);
     }
 
     // No dependencies between projects
     private static Snapshot GenerateFlat(int count)
     {
         var projects = new List<SnapshotProject>();
-        var hashes = new Dictionary<string, string>();
 
         for (var i = 0; i < count; i++)
         {
             var path = ProjectPath(i);
             projects.Add(new SnapshotProject
             {
-                Path = path, TopologicalOrder = i, InputFiles = [path], ProjectReferences = []
+                Path = path,
+                TopologicalOrder = i,
+                InputFiles = new Dictionary<string, string> { [path] = Hash(i) },
+                ProjectReferences = []
             });
-            hashes[path] = Hash(i);
         }
 
-        return BuildSnapshot(projects, hashes);
+        return BuildSnapshot(projects);
     }
 
     private static Snapshot BuildSnapshot(
-        IReadOnlyList<SnapshotProject> projects,
-        Dictionary<string, string> hashes
+        IReadOnlyList<SnapshotProject> projects
     ) => new()
     {
-        Commit = "abc123",
-        Projects = projects.OrderBy(it => it.TopologicalOrder).ThenBy(it => it.Path).ToList(),
-        FileHashes = hashes
+        Commit = "abc123", Projects = projects.OrderBy(it => it.TopologicalOrder).ThenBy(it => it.Path).ToList(),
     };
 
     private static string ProjectPath(int i) => $"src/Project{i}/Project{i}.csproj";

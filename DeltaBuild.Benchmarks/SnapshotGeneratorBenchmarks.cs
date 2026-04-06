@@ -43,8 +43,8 @@ public class SnapshotGeneratorBenchmarks
     }
 
     [Benchmark]
-    public Snapshot GenerateSnapshot()
+    public async Task<Snapshot> GenerateSnapshot()
     {
-        return SnapshotGenerator.GenerateSnapshot(_graph, _workTree);
+        return await SnapshotGenerator.GenerateSnapshot(_graph, _workTree);
     }
 }
