@@ -16,15 +16,17 @@ public sealed class SnapshotResolver(IGitRepository repository, IEnvironment env
         if (value == "-")
         {
             await using var stream = stdin.OpenStream();
-            var snapshot = await SnapshotSerializer.DeserializeAsync(stream, cancellationToken);
-            return new SnapshotResolverResult.Success(snapshot);
+            return new SnapshotResolverResult.Success(
+                await SnapshotSerializer.DeserializeAsync(stream, cancellationToken)
+            );
         }
 
         if (File.Exists(value))
         {
             await using var file = File.OpenRead(value);
-            var snapshot = await SnapshotSerializer.DeserializeAsync(file, cancellationToken);
-            return new SnapshotResolverResult.Success(snapshot);
+            return new SnapshotResolverResult.Success(
+                await SnapshotSerializer.DeserializeAsync(file, cancellationToken)
+            );
         }
 
         var sha = await repository.LookupCommitShaAsync(value, cancellationToken);
@@ -70,7 +72,8 @@ public sealed class SnapshotResolver(IGitRepository repository, IEnvironment env
 
         using var projectCollection = new ProjectCollection();
         var graph = new ProjectGraph(resolvedEntrypoints, projectCollection);
-        return new SnapshotResolverResult.Success(
-            await SnapshotGenerator.GenerateSnapshot(graph, worktree, cancellationToken));
+
+        var snapshot = await SnapshotGenerator.GenerateSnapshot(graph, worktree, cancellationToken);
+        return new SnapshotResolverResult.Success(snapshot);
     }
 }
