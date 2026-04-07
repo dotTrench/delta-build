@@ -10,7 +10,7 @@ public sealed class GlobMatcher
     {
         _matcher = new Matcher(StringComparison.OrdinalIgnoreCase);
         foreach (var pattern in patterns)
-            _matcher.AddInclude(pattern.Replace('\\', '/'));
+            _matcher.AddInclude(PathHelpers.Normalize(pattern));
     }
 
     public bool IsIgnored(string relativePath) =>

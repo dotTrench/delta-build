@@ -64,11 +64,9 @@ jobs:
 
       - name: Fetch base commit
         if: steps.cache.outputs.cache-hit != 'true'
-        run: git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
-
-      - name: Generate base snapshot
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: delta-build snapshot --commit ${{ github.event.pull_request.base.sha }} --output base-snapshot.json
+        run: |
+          git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
+          delta-build snapshot --commit ${{ github.event.pull_request.base.sha }} --output base-snapshot.json
 
       - name: Diff
         run: delta-build diff --base base-snapshot.json --explain --detailed

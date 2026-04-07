@@ -194,7 +194,7 @@ public class SnapshotCommandTests
         await Assert.That(result.ExitCode).IsEqualTo(0);
         using var gitRepo = new Repository(repo.WorkingDirectory);
 
-        await Assert.That(gitRepo.Worktrees).IsEmpty();
+        await Assert.That(gitRepo.Worktrees.Count()).IsEqualTo(0);
         await Assert.That(gitRepo.Branches.Count()).IsEqualTo(1);
     }
 
