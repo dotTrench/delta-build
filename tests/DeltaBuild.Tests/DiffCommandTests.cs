@@ -1,5 +1,9 @@
+using System.Text.Json;
+
 using DeltaBuild.Cli.Commands;
 using DeltaBuild.Cli.Core;
+using DeltaBuild.Cli.Core.Diff;
+using DeltaBuild.Cli.Core.Diff.Formatting;
 using DeltaBuild.Tests.Utils;
 
 using LibGit2Sharp;
@@ -283,6 +287,62 @@ public sealed class DiffCommandTests : IDisposable
         await Assert.That(lines.Count).IsEqualTo(2);
         await Assert.That(lines[0]).IsEqualTo("src/Z/Z.csproj");
         await Assert.That(lines[1]).IsEqualTo("src/A/A.csproj");
+    }
+
+    [Test]
+    public async Task OutputsProject_WhenExplicitlyImportedPropsFileModified(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj", x => x.AddImport("../../build/common.props"))
+            .WriteFile("build/common.props", "<Project />")
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .WriteFile("build/common.props", "<Project><PropertyGroup><LangVersion>latest</LangVersion></PropertyGroup></Project>")
+            .Commit("Update common.props");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        var line = await Assert.That(stdout.GetLines()).HasSingleItem();
+        await Assert.That(line).IsEqualTo("src/Core/Core.csproj");
+    }
+
+    [Test]
+    public async Task DependentProject_IsAffected_NotModified_WhenDependencyProjectFileChanges(CancellationToken cancellationToken)
+    {
+        // When Core.csproj itself changes, App should be Affected (via dependency graph)
+        // not Modified (via direct file tracking).
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .CreateCsproj("src/App/App.csproj", x => x.AddItem("ProjectReference", @"../Core/Core.csproj"))
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .CreateCsproj("src/Core/Core.csproj", x => x.AddProperty("LangVersion", "latest"))
+            .Commit("Update Core.csproj");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit, "--format", "json"],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+
+        var projects = JsonSerializer.Deserialize<List<ProjectDiffResult>>(stdout.GetString(), JsonFormatter.Options)!;
+
+        var core = await Assert.That(projects).HasSingleItem(p => p.Path == "src/Core/Core.csproj");
+        await Assert.That(core.State).IsEqualTo(ProjectState.Modified);
+
+        var app = await Assert.That(projects).HasSingleItem(p => p.Path == "src/App/App.csproj");
+        await Assert.That(app.State).IsEqualTo(ProjectState.Affected);
     }
 
     [Test]
