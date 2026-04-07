@@ -21,7 +21,7 @@ jobs:
         run: ./install-local.sh 0.0.0-${GITHUB_SHA::7}
 
       - name: Diff
-        run: delta-build diff --base ${{ github.event.pull_request.base.sha }}
+        run: delta-build diff --base ${{ github.event.pull_request.base.sha }} --explain --detailed
 
   diff-shallow:
     runs-on: ubuntu-latest
@@ -40,4 +40,4 @@ jobs:
         run: git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
 
       - name: Diff
-        run: delta-build diff --base ${{ github.event.pull_request.base.sha }}
+        run: delta-build diff --base ${{ github.event.pull_request.base.sha }} --explain --detailed
