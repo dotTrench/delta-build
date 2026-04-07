@@ -8,10 +8,21 @@
     <Nullable>enable</Nullable>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>delta-build</ToolCommandName>
+    <Authors>dotTrench</Authors>
+    <Description>Analyzes your .NET build graph and git history to determine exactly which projects need to be rebuilt.</Description>
+    <PackageProjectUrl>https://github.com/dotTrench/delta-build</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/dotTrench/delta-build</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>dotnet;build;git;affected;incremental</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="../README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
 
+  <ItemGroup>
     <PackageReference Include="Microsoft.Build" Version="17.11.48" ExcludeAssets="runtime"/>
     <PackageReference Include="Microsoft.Build.Framework" Version="17.11.48" ExcludeAssets="runtime"/>
     <PackageReference Include="Microsoft.Build.Prediction" Version="1.2.36"/>
@@ -29,5 +40,9 @@
     <PackageReference Include="Microsoft.VisualStudio.SolutionPersistence" Version="1.0.52"/>
     <PackageReference Include="Spectre.Console.Cli" Version="0.55.0"/>
   </ItemGroup>
+
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
 
 </Project>
