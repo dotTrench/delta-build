@@ -165,10 +165,8 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
 
         if (await repo.IsShallowRepositoryAsync(cancellationToken))
         {
-            var headSha = await repo.LookupCommitShaAsync("HEAD", cancellationToken);
-
-            var isUnsafe = await IsShallowUnsafeAsync(repo, settings.Base, headSha, cancellationToken) ||
-                           await IsShallowUnsafeAsync(repo, settings.Head, headSha, cancellationToken);
+            var isUnsafe = await IsShallowUnsafeAsync(repo, settings.Base, cancellationToken) ||
+                           await IsShallowUnsafeAsync(repo, settings.Head, cancellationToken);
 
             if (isUnsafe)
             {
@@ -289,7 +287,6 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
     private static async Task<bool> IsShallowUnsafeAsync(
         GitRepository repo,
         string value,
-        string? headSha,
         CancellationToken cancellationToken
     )
     {
@@ -297,7 +294,10 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
             return false;
 
         var sha = await repo.LookupCommitShaAsync(value, cancellationToken);
-        return sha != headSha;
+        if (sha is null)
+            return true;
+
+        return !await repo.CommitExistsLocallyAsync(sha, cancellationToken);
     }
 
     private async Task<Snapshot?> ResolveSnapshotAsync(

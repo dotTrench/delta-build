@@ -81,18 +81,15 @@ public sealed class SnapshotCommand : AsyncCommand<SnapshotCommand.Settings>
             return 1;
         }
 
-        if (await repo.IsShallowRepositoryAsync(cancellationToken))
+        var isShallow = await repo.IsShallowRepositoryAsync(cancellationToken);
+        if (isShallow && !await repo.CommitExistsLocallyAsync(sha, cancellationToken))
         {
-            var headSha = await repo.LookupCommitShaAsync("HEAD", cancellationToken);
-            if (sha != headSha)
-            {
-                _console.MarkupLine(
-                    "[yellow]Warning: This repository is a shallow clone. " +
-                    "Snapshotting a commit other than HEAD may fail if the target commit has not been fetched. " +
-                    "Ensure the repository has sufficient depth. " +
-                    "See https://github.com/dotTrench/delta-build/blob/main/docs/shallow-clones.md[/]"
-                );
-            }
+            _console.MarkupLine(
+                "[yellow]Warning: This repository is a shallow clone. " +
+                "Snapshotting a commit other than HEAD may fail if the target commit has not been fetched. " +
+                "Ensure the repository has sufficient depth. " +
+                "See https://github.com/dotTrench/delta-build/blob/main/docs/shallow-clones.md[/]"
+            );
         }
 
 

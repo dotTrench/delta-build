@@ -37,6 +37,16 @@ public sealed class GitRepository : IGitRepository
         return result.ExitCode == 0 && result.Stdout.TrimEnd() == "true";
     }
 
+    public async Task<bool> CommitExistsLocallyAsync(string sha, CancellationToken cancellationToken = default)
+    {
+        var result = await GitProcessRunner.RunCmd(
+            WorkingDirectory,
+            ["cat-file", "-e", $"{sha}^{{commit}}"],
+            cancellationToken
+        );
+        return result.ExitCode == 0;
+    }
+
     public async Task<string?> LookupCommitShaAsync(string reference, CancellationToken cancellationToken = default)
     {
         var result = await GitProcessRunner.RunCmd(
