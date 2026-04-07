@@ -11,6 +11,12 @@ namespace DeltaBuild.Cli.Core.Snapshots;
 
 public static class SnapshotGenerator
 {
+    // ProjectFileAndImportsGraphPredictor is excluded because its job is already covered
+    // by ProjectFileAndImportsPredictor (IProjectPredictor), which tracks each project's
+    // own file and imports as inputs. The graph variant additionally reports the project
+    // files and imports of referenced projects as inputs to the consumer — this would
+    // cause downstream projects to be marked as Modified (via direct file tracking) rather
+    // than Affected (via the dependency graph), collapsing the distinction between the two states.
     private static readonly IProjectGraphPredictor[] GraphPredictors = ProjectPredictors.AllProjectGraphPredictors
         .Where(it => it.GetType() != typeof(ProjectFileAndImportsGraphPredictor))
         .ToArray();

@@ -79,6 +79,7 @@ delta-build diff --base main --format sln --output affected.sln
 | `--include-added`         | Include new projects                                                                | `true`        |
 | `--include-removed`       | Include deleted projects                                                            | `false`       |
 | `--include-unchanged`     | Include unchanged projects                                                          | `false`       |
+| `--ignore <pattern>`      | Exclude files matching a glob pattern from the diff. Repeatable.                    |               |
 | `--explain`               | Render a colored tree view to stderr                                                | `false`       |
 | `--detailed`              | When combined with --explain prints more detailed view of diff to stderr            | `false`       |
 | `--format <format>`       | Output format: `plain`, `json`, `sln`, `slnx`                                       | `plain`       |
@@ -129,3 +130,9 @@ az storage blob download --container-name snapshots --name main.json.gz \
   | delta-build diff --base=- --head=HEAD \
   | dotnet build
 ```
+
+## Docs
+
+- [CI Integration](docs/ci-integration.md) — GitHub Actions and Azure DevOps examples
+- [Shallow Clones](docs/shallow-clones.md) — handling shallow git clones in CI
+- [NuGet Package Tracking](docs/nuget-package-tracking.md) — fine-grained package change detection with lock files

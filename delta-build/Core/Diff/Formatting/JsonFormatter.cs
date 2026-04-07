@@ -5,7 +5,7 @@ namespace DeltaBuild.Cli.Core.Diff.Formatting;
 
 public sealed class JsonFormatter : IDiffFormatter
 {
-    private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
+    public static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
     {
         Converters = { new JsonStringEnumConverter<ProjectState>(), new JsonStringEnumConverter<FileState>() }
     };

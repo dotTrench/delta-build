@@ -37,7 +37,7 @@ public class SnapshotResolverTests
         var result = await resolver.ResolveAsync("-", [], cancellationToken);
 
         var success = await Assert.That(result).IsTypeOf<SnapshotResolverResult.Success>();
-        await Assert.That(success.Snapshot.Commit).IsEqualTo("abc123");
+        await Assert.That(success!.Snapshot.Commit).IsEqualTo("abc123");
     }
 
     [Test]
@@ -57,7 +57,7 @@ public class SnapshotResolverTests
             var result = await resolver.ResolveAsync(file, [], cancellationToken);
 
             var success = await Assert.That(result).IsTypeOf<SnapshotResolverResult.Success>();
-            await Assert.That(success.Snapshot.Commit).IsEqualTo("abc123");
+            await Assert.That(success!.Snapshot.Commit).IsEqualTo("abc123");
         }
         finally
         {
