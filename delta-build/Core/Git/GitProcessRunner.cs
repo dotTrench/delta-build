@@ -31,7 +31,7 @@ public static class GitProcessRunner
 
         var stdout = await stdoutTask;
         var stderr = await stderrTask;
-        
+
         return new GitRunResult(p.ExitCode, stdout, stderr);
     }
 }

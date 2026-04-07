@@ -109,16 +109,16 @@ public static class SnapshotGenerator
 
             return _collectors
                 .Select(it => new SnapshotProject
-                    {
-                        Path = PathHelpers.Normalize(Path.GetRelativePath(_worktree.WorkingDirectory, it.Key)),
-                        TopologicalOrder = order.GetValueOrDefault(it.Key, int.MaxValue),
-                        InputFiles = it.Value.GetInputFiles()
+                {
+                    Path = PathHelpers.Normalize(Path.GetRelativePath(_worktree.WorkingDirectory, it.Key)),
+                    TopologicalOrder = order.GetValueOrDefault(it.Key, int.MaxValue),
+                    InputFiles = it.Value.GetInputFiles()
                             .OrderBy(file => file.Key)
                             .ToDictionary(),
-                        ProjectReferences = it.Value.GetProjectReferences()
+                    ProjectReferences = it.Value.GetProjectReferences()
                             .Order()
                             .ToList()
-                    }
+                }
                 )
                 .OrderBy(it => it.TopologicalOrder)
                 .ThenBy(it => it.Path);

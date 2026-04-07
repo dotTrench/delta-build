@@ -16,7 +16,8 @@ app.Configure(c =>
     c.Settings.Registrar.RegisterInstance<IStandardInput>(new ConsoleStandardInput());
     c.ConfigureConsole(AnsiConsole.Create(new AnsiConsoleSettings
     {
-        Out = new AnsiConsoleOutput(Console.Error), Interactive = InteractionSupport.Detect
+        Out = new AnsiConsoleOutput(Console.Error),
+        Interactive = InteractionSupport.Detect
     }));
 
     c.SetApplicationName("delta-build");

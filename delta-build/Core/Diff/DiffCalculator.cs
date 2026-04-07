@@ -6,7 +6,7 @@ namespace DeltaBuild.Cli.Core.Diff;
 
 public static class DiffCalculator
 {
-    public static DiffResult Calculate(Snapshot baseSnapshot, Snapshot headSnapshot)
+    public static DiffResult Calculate(Snapshot baseSnapshot, Snapshot headSnapshot, GlobMatcher? ignore = null)
     {
         var baseProjects = baseSnapshot.Projects.ToFrozenDictionary(it => it.Path);
         var headProjects = headSnapshot.Projects.ToFrozenDictionary(it => it.Path);
@@ -23,7 +23,8 @@ public static class DiffCalculator
                     [],
                     GetFileDiffs(
                         baseProject: null,
-                        headProject: project
+                        headProject: project,
+                        ignore
                     ));
             }
         }
@@ -36,7 +37,7 @@ public static class DiffCalculator
                     project.Path,
                     ProjectState.Removed,
                     [],
-                    GetFileDiffs(baseProject: project, headProject: null)
+                    GetFileDiffs(baseProject: project, headProject: null, ignore)
                 );
             }
         }
@@ -51,7 +52,8 @@ public static class DiffCalculator
         {
             var fileDiffs = GetFileDiffs(
                 baseProjects[project],
-                headProjects[project]
+                headProjects[project],
+                ignore
             );
 
 
@@ -71,14 +73,19 @@ public static class DiffCalculator
         }
 
         var projects = results.Values
-            .OrderBy(it => it.Path)
+            .OrderBy(it =>
+                headProjects.TryGetValue(it.Path, out var h) ? h.TopologicalOrder :
+                baseProjects.TryGetValue(it.Path, out var b) ? b.TopologicalOrder :
+                int.MaxValue)
+            .ThenBy(it => it.Path)
             .ToList();
         return new DiffResult(projects);
     }
 
     private static List<FileDiffResult> GetFileDiffs(
         SnapshotProject? baseProject,
-        SnapshotProject? headProject
+        SnapshotProject? headProject,
+        GlobMatcher? ignore
     )
     {
         if (baseProject is null && headProject is null)
@@ -88,6 +95,7 @@ public static class DiffCalculator
         var headFiles = headProject?.InputFiles.Keys ?? [];
 
         return headFiles.Union(baseFiles)
+            .Where(path => ignore is null || !ignore.IsIgnored(path))
             .Select(it => new FileDiffResult(it, GetFileState(it)))
             .OrderBy(it => it.Path)
             .ToList();

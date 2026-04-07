@@ -184,6 +184,108 @@ public sealed class DiffCommandTests : IDisposable
     }
 
     [Test]
+    public async Task DoesNotOutputProject_WhenOnlyChangedFileIsIgnored(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .WriteFile("src/Core/appsettings.json", "{}")
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .WriteFile("src/Core/appsettings.json", "{ \"key\": \"value\" }")
+            .Commit("Update settings");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit, "--ignore", "**/*.json"],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        await Assert.That(stdout.GetLines()).IsEmpty();
+    }
+
+    [Test]
+    public async Task OutputsProject_WhenIgnorePatternDoesNotMatch(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .WriteFile("src/Core/appsettings.json", "{}")
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .WriteFile("src/Core/appsettings.json", "{ \"key\": \"value\" }")
+            .Commit("Update settings");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit, "--ignore", "**/*.xml"],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        var line = await Assert.That(stdout.GetLines()).HasSingleItem();
+        await Assert.That(line).IsEqualTo("src/Core/Core.csproj");
+    }
+
+    [Test]
+    public async Task DoesNotOutputProject_WhenMultipleIgnorePatternsCoversAllChanges(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .WriteFile("src/Core/appsettings.json", "{}")
+            .WriteFile("src/Core/data.xml", "<root/>")
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .WriteFile("src/Core/appsettings.json", "{ \"key\": \"value\" }")
+            .WriteFile("src/Core/data.xml", "<root><item/></root>")
+            .Commit("Update config files");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit, "--ignore", "**/*.json", "--ignore", "**/*.xml"],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        await Assert.That(stdout.GetLines()).IsEmpty();
+    }
+
+    [Test]
+    public async Task OutputIsInTopologicalOrder(CancellationToken cancellationToken)
+    {
+        // Z has no dependencies (topological order 0).
+        // A depends on Z (topological order 1).
+        // Alphabetically A < Z, but topologically Z must come first.
+        _repo
+            .CreateCsproj("src/Z/Z.csproj")
+            .CreateCsproj("src/A/A.csproj", x => x.AddItem("ProjectReference", @"../Z/Z.csproj"))
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .WriteFile("src/Z/Foo.cs", "public class Foo {}")
+            .Commit("Modify Z");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        var lines = stdout.GetLines().ToList();
+
+        await Assert.That(lines.Count).IsEqualTo(2);
+        await Assert.That(lines[0]).IsEqualTo("src/Z/Z.csproj");
+        await Assert.That(lines[1]).IsEqualTo("src/A/A.csproj");
+    }
+
+    [Test]
     public async Task ReturnsExitCode1_WhenBaseCommitNotFound(CancellationToken cancellationToken)
     {
         _repo.CreateCsproj("src/Core/Core.csproj").Commit("Initial commit");

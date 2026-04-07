@@ -65,13 +65,21 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
         [Description("Include projects with an upstream dependency that was modified or added.")]
         public bool IncludeAffected { get; init; } = true;
 
-        [CommandOption("--pretty")]
+        [CommandOption("--ignore <pattern>")]
+        [Description(
+            "Glob pattern for files to exclude from the diff. " +
+            "Files matching any pattern are treated as unchanged. " +
+            "Supports * and ? wildcards and ** for recursive matching. " +
+            "Can be specified multiple times.")]
+        public string[] Ignore { get; init; } = [];
+
+        [CommandOption("--explain")]
         [Description("Write a colored tree view of the affected projects to stderr alongside the normal output.")]
-        public bool Pretty { get; init; }
+        public bool Explain { get; init; }
 
         [CommandOption("--detailed")]
         [Description(
-            "Enriches the --pretty tree view with file-level changes and upstream causes for each affected project.")]
+            "Enriches the --explain tree view with file-level changes and upstream causes for each affected project.")]
         public bool Detailed { get; init; }
 
         [CommandOption("--format <format>")]
@@ -198,12 +206,13 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
         var formatter = GetFormatter(settings, repo.WorkingDirectory);
 
 
-        var diff = DiffCalculator.Calculate(baseSnapshot, headSnapshot);
+        var ignore = settings.Ignore.Length > 0 ? new GlobMatcher(settings.Ignore) : null;
+        var diff = DiffCalculator.Calculate(baseSnapshot, headSnapshot, ignore);
 
         var outputProjects = diff.Projects
             .Where(it => ShouldInclude(it, settings))
             .ToList();
-        if (settings.Pretty)
+        if (settings.Explain)
         {
             DiffRenderer.Render(_console, !settings.Detailed ? outputProjects : diff.Projects, settings.Detailed);
         }

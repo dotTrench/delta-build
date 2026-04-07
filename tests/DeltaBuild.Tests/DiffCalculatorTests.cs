@@ -242,6 +242,89 @@ public class DiffCalculatorTests
     }
 
     [Test]
+    public async Task Unchanged_WhenOnlyChangedFileIsIgnored()
+    {
+        var @base = BuildSnapshot("abc",
+            new() { ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1", ["src/Core/Foo.cs"] = "hash2" }, []) });
+
+        var head = BuildSnapshot("def",
+            new() { ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1", ["src/Core/Foo.cs"] = "hash3" }, []) });
+
+        var result = DiffCalculator.Calculate(@base, head, new GlobMatcher(["**/*.cs"]));
+
+        var core = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/Core/Core.csproj");
+        await Assert.That(core.State).IsEqualTo(ProjectState.Unchanged);
+    }
+
+    [Test]
+    public async Task Modified_WhenNonIgnoredFileAlsoChanged()
+    {
+        var @base = BuildSnapshot("abc",
+            new()
+            {
+                ["src/Core/Core.csproj"] = (
+                    new() { ["src/Core/Core.csproj"] = "hash1", ["src/Core/Foo.cs"] = "hash2", ["src/Core/appsettings.json"] = "hash3" },
+                    [])
+            });
+
+        var head = BuildSnapshot("def",
+            new()
+            {
+                ["src/Core/Core.csproj"] = (
+                    new() { ["src/Core/Core.csproj"] = "hash1", ["src/Core/Foo.cs"] = "hash4", ["src/Core/appsettings.json"] = "hash5" },
+                    [])
+            });
+
+        // Ignore the json but not the cs — project should still be Modified
+        var result = DiffCalculator.Calculate(@base, head, new GlobMatcher(["**/*.json"]));
+
+        var core = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/Core/Core.csproj");
+        await Assert.That(core.State).IsEqualTo(ProjectState.Modified);
+    }
+
+    [Test]
+    public async Task Unchanged_WhenIgnoredFileIsAdded()
+    {
+        var @base = BuildSnapshot("abc",
+            new() { ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1" }, []) });
+
+        var head = BuildSnapshot("def",
+            new() { ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1", ["src/Core/appsettings.json"] = "hash2" }, []) });
+
+        var result = DiffCalculator.Calculate(@base, head, new GlobMatcher(["**/*.json"]));
+
+        var core = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/Core/Core.csproj");
+        await Assert.That(core.State).IsEqualTo(ProjectState.Unchanged);
+    }
+
+    [Test]
+    public async Task Unchanged_WhenIgnoredFileIsDeleted()
+    {
+        var @base = BuildSnapshot("abc",
+            new() { ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1", ["src/Core/appsettings.json"] = "hash2" }, []) });
+
+        var head = BuildSnapshot("def",
+            new() { ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1" }, []) });
+
+        var result = DiffCalculator.Calculate(@base, head, new GlobMatcher(["**/*.json"]));
+
+        var core = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/Core/Core.csproj");
+        await Assert.That(core.State).IsEqualTo(ProjectState.Unchanged);
+    }
+
+    [Test]
+    public async Task AddedProject_StillAdded_WhenAllFilesIgnored()
+    {
+        var head = BuildSnapshot("def",
+            new() { ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1", ["src/Core/Foo.cs"] = "hash2" }, []) });
+
+        var result = DiffCalculator.Calculate(EmptySnapshot(), head, new GlobMatcher(["**/*.cs", "**/*.csproj"]));
+
+        var core = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/Core/Core.csproj");
+        await Assert.That(core.State).IsEqualTo(ProjectState.Added);
+    }
+
+    [Test]
     public async Task Affected_WhenDependencyIsRemoved()
     {
         var @base = BuildSnapshot("abc",

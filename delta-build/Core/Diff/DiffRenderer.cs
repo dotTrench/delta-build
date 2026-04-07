@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO.Enumeration;
 
 using Spectre.Console;
 
@@ -10,7 +11,13 @@ public static class DiffRenderer
     {
         var tree = new Tree(new Text("delta-build", new Style(decoration: Decoration.Bold)));
 
-        foreach (var project in projects)
+        // Sort by status, then by original topological order
+        var ordered = projects.Select((project, i) => (project, i))
+            .OrderBy(it => GetOrder(it.project.State))
+            .ThenBy(it => it.i)
+            .Select(it => it.project);
+
+        foreach (var project in ordered)
         {
             var label = new Text(
                 $"{project.Path} ({project.State})",
@@ -33,6 +40,18 @@ public static class DiffRenderer
         }
 
         console.Write(tree);
+    }
+
+    private static int GetOrder(ProjectState state)
+    {
+        return state switch
+        {
+            ProjectState.Removed or ProjectState.Added => 0,
+            ProjectState.Modified => 1,
+            ProjectState.Affected => 2,
+            ProjectState.Unchanged => 3,
+            _ => 4
+        };
     }
 
 

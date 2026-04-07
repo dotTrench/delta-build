@@ -1,18 +1,5 @@
 ﻿[
   {
-    path: src/App/App.csproj,
-    state: Affected,
-    affectedBy: [
-      src/Core/Core.csproj
-    ],
-    inputFiles: [
-      {
-        path: src/App/App.csproj,
-        state: Unchanged
-      }
-    ]
-  },
-  {
     path: src/Core/Core.csproj,
     state: Modified,
     inputFiles: [
@@ -23,6 +10,19 @@
       {
         path: src/Core/Foo.cs,
         state: Added
+      }
+    ]
+  },
+  {
+    path: src/App/App.csproj,
+    state: Affected,
+    affectedBy: [
+      src/Core/Core.csproj
+    ],
+    inputFiles: [
+      {
+        path: src/App/App.csproj,
+        state: Unchanged
       }
     ]
   }

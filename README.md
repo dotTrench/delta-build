@@ -79,8 +79,8 @@ delta-build diff --base main --format sln --output affected.sln
 | `--include-added`         | Include new projects                                                                | `true`        |
 | `--include-removed`       | Include deleted projects                                                            | `false`       |
 | `--include-unchanged`     | Include unchanged projects                                                          | `false`       |
-| `--pretty`                | Render a colored tree view to stderr                                                | `false`       |
-| `--detailed`              | When combined with --pretty prints more detailed view of diff to stderr             | `false`       |
+| `--explain`               | Render a colored tree view to stderr                                                | `false`       |
+| `--detailed`              | When combined with --explain prints more detailed view of diff to stderr            | `false`       |
 | `--format <format>`       | Output format: `plain`, `json`, `sln`, `slnx`                                       | `plain`       |
 | `--output <path>`         | Write output to file                                                                | stdout        |
 

@@ -143,7 +143,8 @@ public class DiffCalculatorBenchmarks
         IReadOnlyList<SnapshotProject> projects
     ) => new()
     {
-        Commit = "abc123", Projects = projects.OrderBy(it => it.TopologicalOrder).ThenBy(it => it.Path).ToList(),
+        Commit = "abc123",
+        Projects = projects.OrderBy(it => it.TopologicalOrder).ThenBy(it => it.Path).ToList(),
     };
 
     private static string ProjectPath(int i) => $"src/Project{i}/Project{i}.csproj";
