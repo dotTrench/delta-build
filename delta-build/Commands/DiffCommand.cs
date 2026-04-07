@@ -213,13 +213,16 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
         var outputProjects = diff.Projects
             .Where(it => ShouldInclude(it, settings))
             .ToList();
+        await using (var output = settings.Output?.Create() ?? _stdout.OpenStream())
+        {
+            await formatter.FormatAsync(outputProjects, output, cancellationToken);
+        }
+
         if (settings.Explain)
         {
             DiffRenderer.Render(_console, !settings.Detailed ? outputProjects : diff.Projects, settings.Detailed);
         }
 
-        await using var output = settings.Output?.Create() ?? _stdout.OpenStream();
-        await formatter.FormatAsync(outputProjects, output, cancellationToken);
         return 0;
     }
 
