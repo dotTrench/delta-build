@@ -1,0 +1,43 @@
+name: Smoke Test
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  diff-full-history:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install delta-build
+        run: ./install-local.sh 0.0.0-${GITHUB_SHA::7}
+
+      - name: Diff
+        run: delta-build diff --base ${{ github.event.pull_request.base.sha }}
+
+  diff-shallow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install delta-build
+        run: ./install-local.sh 0.0.0-${GITHUB_SHA::7}
+
+      - name: Fetch base commit
+        run: git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
+
+      - name: Diff
+        run: delta-build diff --base ${{ github.event.pull_request.base.sha }}

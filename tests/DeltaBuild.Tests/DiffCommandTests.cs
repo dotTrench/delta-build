@@ -188,6 +188,123 @@ public sealed class DiffCommandTests : IDisposable
     }
 
     [Test]
+    public async Task OutputsProject_WhenRootDirectoryBuildPropsModified(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .WriteFile("Directory.Build.props", "<Project />")
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .WriteFile("Directory.Build.props", "<Project><PropertyGroup><LangVersion>latest</LangVersion></PropertyGroup></Project>")
+            .Commit("Update Directory.Build.props");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        var line = await Assert.That(stdout.GetLines()).HasSingleItem();
+        await Assert.That(line).IsEqualTo("src/Core/Core.csproj");
+    }
+
+    [Test]
+    public async Task OutputsOnlyScopedProjects_WhenSubdirectoryDirectoryBuildPropsModified(CancellationToken cancellationToken)
+    {
+        // Directory.Build.props in src/ should only affect projects under src/,
+        // not projects at the root level or in sibling directories.
+        _repo
+            .CreateCsproj("tools/Tool.csproj")
+            .CreateCsproj("src/Core/Core.csproj")
+            .CreateCsproj("src/App/App.csproj")
+            .WriteFile("src/Directory.Build.props", "<Project />")
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .WriteFile("src/Directory.Build.props", "<Project><PropertyGroup><Nullable>enable</Nullable></PropertyGroup></Project>")
+            .Commit("Enable nullable in src");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        var lines = stdout.GetLines().ToList();
+
+        await Assert.That(lines).Contains("src/Core/Core.csproj");
+        await Assert.That(lines).Contains("src/App/App.csproj");
+        await Assert.That(lines).DoesNotContain("tools/Tool.csproj");
+    }
+
+    [Test]
+    public async Task OutputsAllProjects_WhenRootDirectoryBuildPropsModified_WithNestedDirectoryBuildProps(CancellationToken cancellationToken)
+    {
+        // MSBuild stops searching for parent Directory.Build.props once it finds one in a
+        // subdirectory, so src/Core/Core.csproj only imports src/Directory.Build.props —
+        // NOT the root one. Changing the root Directory.Build.props therefore only affects
+        // projects that directly import it (i.e. tools/Tool.csproj, which has no closer one).
+        _repo
+            .CreateCsproj("tools/Tool.csproj")
+            .CreateCsproj("src/Core/Core.csproj")
+            .WriteFile("Directory.Build.props", "<Project />")
+            .WriteFile("src/Directory.Build.props", "<Project />")
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .WriteFile("Directory.Build.props", "<Project><PropertyGroup><LangVersion>latest</LangVersion></PropertyGroup></Project>")
+            .Commit("Update root Directory.Build.props");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        var lines = stdout.GetLines().ToList();
+
+        await Assert.That(lines).Contains("tools/Tool.csproj");
+        await Assert.That(lines).DoesNotContain("src/Core/Core.csproj");
+    }
+
+    [Test]
+    public async Task OutputsOnlyScopedProjects_WhenNestedDirectoryBuildPropsModified(CancellationToken cancellationToken)
+    {
+        // Both root and src/ have Directory.Build.props.
+        // Changing only the src/ one should affect src/ projects but not tools/.
+        _repo
+            .CreateCsproj("tools/Tool.csproj")
+            .CreateCsproj("src/Core/Core.csproj")
+            .WriteFile("Directory.Build.props", "<Project />")
+            .WriteFile("src/Directory.Build.props", "<Project />")
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .WriteFile("src/Directory.Build.props", "<Project><PropertyGroup><Nullable>enable</Nullable></PropertyGroup></Project>")
+            .Commit("Update src Directory.Build.props");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        var lines = stdout.GetLines().ToList();
+
+        await Assert.That(lines).Contains("src/Core/Core.csproj");
+        await Assert.That(lines).DoesNotContain("tools/Tool.csproj");
+    }
+
+    [Test]
     public async Task DoesNotOutputProject_WhenOnlyChangedFileIsIgnored(CancellationToken cancellationToken)
     {
         _repo

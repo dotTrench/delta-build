@@ -89,7 +89,8 @@ public sealed class SnapshotCommand : AsyncCommand<SnapshotCommand.Settings>
                 _console.MarkupLine(
                     "[yellow]Warning: This repository is a shallow clone. " +
                     "Snapshotting a commit other than HEAD may fail if the target commit has not been fetched. " +
-                    "Ensure the repository has sufficient depth.[/]"
+                    "Ensure the repository has sufficient depth. " +
+                    "See https://github.com/dotTrench/delta-build/blob/main/docs/shallow-clones.md[/]"
                 );
             }
         }

@@ -175,7 +175,8 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
                 _console.MarkupLine(
                     "[yellow]Warning: This repository is a shallow clone. " +
                     "Diffing against commit references may fail if the target commit has not been fetched. " +
-                    "Consider using a snapshot file instead, or ensure the repository has sufficient depth.[/]"
+                    "Consider using a snapshot file instead, or ensure the repository has sufficient depth. " +
+                    "See https://github.com/dotTrench/delta-build/blob/main/docs/shallow-clones.md[/]"
                 );
             }
         }
