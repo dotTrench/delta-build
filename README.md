@@ -4,6 +4,12 @@ delta-build analyzes your .NET build graph and git history to determine exactly 
 
 Inspired by [dotnet-affected](https://github.com/leonardochaia/dotnet-affected).
 
+## Docs
+
+- [CI Integration](docs/ci-integration.md) — GitHub Actions and Azure DevOps examples
+- [Shallow Clones](docs/shallow-clones.md) — handling shallow git clones in CI
+- [NuGet Package Tracking](docs/nuget-package-tracking.md) — fine-grained package change detection with lock files
+
 ## How it works
 
 delta-build generates a snapshot of your repository's build graph at a given commit. To ensure a clean, reproducible
