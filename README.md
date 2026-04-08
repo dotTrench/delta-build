@@ -7,8 +7,7 @@ Inspired by [dotnet-affected](https://github.com/leonardochaia/dotnet-affected).
 ## How it works
 
 delta-build generates a snapshot of your repository's build graph at a given commit. To ensure a clean, reproducible
-view of the repository at that point in time, it creates a git worktree for the target commit
-using [LibGit2Sharp](https://github.com/libgit2/libgit2sharp) — this means the snapshot always reflects the committed
+view of the repository at that point in time, it creates a git worktree for the target commit — this means the snapshot always reflects the committed
 state, never any local modifications.
 
 Within the worktree, delta-build uses
