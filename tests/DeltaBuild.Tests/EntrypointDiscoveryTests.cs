@@ -159,4 +159,52 @@ public sealed class EntrypointDiscoveryTests : IDisposable
         var path = await Assert.That(success!.Paths).HasSingleItem();
         await Assert.That(path).EndsWith("Core.csproj");
     }
+
+    [Test]
+    public async Task Resolve_ReturnsSuccess_WhenPatternMatchesSingleSolution()
+    {
+        _repo.WriteFile("MyApp.sln", "");
+
+        var result = EntrypointDiscovery.Resolve(_repo.WorkingDirectory, ["*.sln"]);
+
+        var success = await Assert.That(result).IsTypeOf<EntrypointDiscoveryResult.Success>();
+        var path = await Assert.That(success!.Paths).HasSingleItem();
+        await Assert.That(path).EndsWith("MyApp.sln");
+    }
+
+    [Test]
+    public async Task Resolve_ReturnsAmbiguous_WhenPatternMatchesMultipleSolutionFiles()
+    {
+        _repo
+            .WriteFile("First.sln", "")
+            .WriteFile("Second.sln", "");
+
+        var result = EntrypointDiscovery.Resolve(_repo.WorkingDirectory, ["*.sln"]);
+
+        var ambiguous = await Assert.That(result).IsTypeOf<EntrypointDiscoveryResult.Ambiguous>();
+        await Assert.That(ambiguous!.Candidates.Count).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task Resolve_ReturnsSuccess_WhenPatternMatchesMultipleCsprojFiles()
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .CreateCsproj("src/App/App.csproj");
+
+        var result = EntrypointDiscovery.Resolve(_repo.WorkingDirectory, ["**/*.csproj"]);
+
+        var success = await Assert.That(result).IsTypeOf<EntrypointDiscoveryResult.Success>();
+        await Assert.That(success!.Paths.Count).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task Resolve_ReturnsNotFound_WhenPatternMatchesNothing()
+    {
+        _repo.CreateCsproj("src/Core/Core.csproj");
+
+        var result = EntrypointDiscovery.Resolve(_repo.WorkingDirectory, ["*.sln"]);
+
+        await Assert.That(result).IsTypeOf<EntrypointDiscoveryResult.NotFound>();
+    }
 }

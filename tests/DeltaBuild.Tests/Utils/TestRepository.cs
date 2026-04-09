@@ -2,6 +2,8 @@ using LibGit2Sharp;
 
 using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
+using Microsoft.VisualStudio.SolutionPersistence.Model;
+using Microsoft.VisualStudio.SolutionPersistence.Serializer;
 
 namespace DeltaBuild.Tests.Utils;
 
@@ -36,6 +38,34 @@ public sealed class TestRepository : IDisposable
         root.Save(Path.Combine(WorkingDirectory, relativePath));
 
         return this;
+    }
+
+    public async Task CreateSlnxAsync(
+        string relativePath,
+        Action<SolutionModel>? configuration = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var fullPath = Path.Combine(WorkingDirectory, relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+        var model = new SolutionModel();
+        configuration?.Invoke(model);
+        await using var stream = File.Create(fullPath);
+        await SolutionSerializers.SlnXml.SaveAsync(stream, model, cancellationToken);
+    }
+
+    public async Task CreateSlnAsync(
+        string relativePath,
+        Action<SolutionModel>? configuration = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var fullPath = Path.Combine(WorkingDirectory, relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+        var model = new SolutionModel();
+        configuration?.Invoke(model);
+        await using var stream = File.Create(fullPath);
+        await SolutionSerializers.SlnFileV12.SaveAsync(stream, model, cancellationToken);
     }
 
     public TestRepository DeleteFile(string relativePath)

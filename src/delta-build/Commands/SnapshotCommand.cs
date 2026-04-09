@@ -23,8 +23,8 @@ public sealed class SnapshotCommand : AsyncCommand<SnapshotCommand.Settings>
 
         [CommandOption("-e|--entrypoint <project-or-solution>")]
         [Description(
-            "One or more solution or project files to use as the build graph entrypoint. If not specified, delta-build will attempt to discover entrypoints automatically.")]
-        public required FileInfo[] Entrypoints { get; init; } = [];
+            "One or more solution or project files (or glob patterns) to use as the build graph entrypoint. If not specified, delta-build will attempt to discover entrypoints automatically.")]
+        public required string[] Entrypoints { get; init; } = [];
 
 
         [CommandOption("-o|--output <path>")]
@@ -98,26 +98,34 @@ public sealed class SnapshotCommand : AsyncCommand<SnapshotCommand.Settings>
 
         await using var worktree = await repo.CreateWorktreeAsync(sha, cancellationToken);
 
+        var worktreeCwd = Path.GetFullPath(relativeWorkingDirectory, worktree.WorkingDirectory);
+
         IReadOnlyCollection<string> entrypoints;
         if (settings.Entrypoints is { Length: > 0 })
         {
-            entrypoints = settings.Entrypoints
-                .Select(e => Path.GetRelativePath(repo.WorkingDirectory, e.FullName))
-                .Select(it => Path.GetFullPath(it, worktree.WorkingDirectory))
-                .ToList();
-
-            foreach (var entrypoint in entrypoints)
+            var result = EntrypointDiscovery.Resolve(worktreeCwd, settings.Entrypoints);
+            if (result is EntrypointDiscoveryResult.Ambiguous(var candidates))
             {
-                if (Path.Exists(entrypoint)) continue;
+                _console.MarkupLine("[red]Ambiguous entrypoints found:[/]");
+                foreach (var candidate in candidates)
+                {
+                    _console.MarkupLine($"[red]-{candidate}[/]");
+                }
 
-                _console.MarkupLine($"[red]Entrypoint {entrypoint} does not exist[/]");
                 return 1;
             }
+
+            if (result is not EntrypointDiscoveryResult.Success(var resolved))
+            {
+                _console.MarkupLine("[red]No entrypoints found matching the specified patterns[/]");
+                return 1;
+            }
+
+            entrypoints = resolved;
         }
         else
         {
-            var result =
-                EntrypointDiscovery.Discover(Path.GetFullPath(relativeWorkingDirectory, worktree.WorkingDirectory));
+            var result = EntrypointDiscovery.Discover(worktreeCwd);
 
             switch (result)
             {
@@ -126,10 +134,10 @@ public sealed class SnapshotCommand : AsyncCommand<SnapshotCommand.Settings>
                     break;
 
                 case EntrypointDiscoveryResult.Ambiguous a:
-                    _console.MarkupLine("[red]Ambigious entrypoints found:[/]");
+                    _console.MarkupLine("[red]Ambiguous entrypoints found:[/]");
                     foreach (var candidate in a.Candidates)
                     {
-                        _console.MarkupLine($"[red]{candidate}[/]");
+                        _console.MarkupLine($"[red]-{candidate}[/]");
                     }
 
                     return 1;

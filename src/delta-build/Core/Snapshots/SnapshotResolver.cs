@@ -9,7 +9,7 @@ public sealed class SnapshotResolver(IGitRepository repository, IEnvironment env
 {
     public async Task<SnapshotResolverResult> ResolveAsync(
         string value,
-        IReadOnlyList<FileInfo> entrypoints,
+        IReadOnlyList<string> entrypoints,
         CancellationToken cancellationToken = default
     )
     {
@@ -37,24 +37,24 @@ public sealed class SnapshotResolver(IGitRepository repository, IEnvironment env
 
         await using var worktree = await repository.CreateWorktreeAsync(sha, cancellationToken);
 
+        var worktreeCwd = Path.GetFullPath(relativeWorkingDirectory, worktree.WorkingDirectory);
+
         IReadOnlyCollection<string> resolvedEntrypoints;
         if (entrypoints is { Count: > 0 })
         {
-            resolvedEntrypoints = entrypoints
-                .Select(e => Path.GetRelativePath(repository.WorkingDirectory, Path.GetFullPath(e.FullName)))
-                .Select(it => Path.GetFullPath(it, worktree.WorkingDirectory))
-                .ToList();
-
-            foreach (var entrypoint in resolvedEntrypoints)
+            var discovery = EntrypointDiscovery.Resolve(worktreeCwd, entrypoints);
+            if (discovery is EntrypointDiscoveryResult.Ambiguous(var candidates))
             {
-                if (!Path.Exists(entrypoint))
-                    return new SnapshotResolverResult.EntrypointNotFound(entrypoint);
+                return new SnapshotResolverResult.AmbiguousEntrypoints(candidates);
             }
+
+            if (discovery is not EntrypointDiscoveryResult.Success(var resolved))
+                return new SnapshotResolverResult.NoEntrypointsFound();
+            resolvedEntrypoints = resolved;
         }
         else
         {
-            var discovery = EntrypointDiscovery.Discover(
-                Path.GetFullPath(relativeWorkingDirectory, worktree.WorkingDirectory));
+            var discovery = EntrypointDiscovery.Discover(worktreeCwd);
 
             switch (discovery)
             {
