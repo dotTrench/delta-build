@@ -123,7 +123,7 @@ jobs:
         run: ./eng/install-local.sh 0.0.0-${GITHUB_SHA::7}
 
       - name: Download base snapshot
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: base-snapshot-${{ github.event.pull_request.base.sha }}
 
