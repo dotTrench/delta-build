@@ -18,7 +18,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Install delta-build
-        run: ./install-local.sh 0.0.0-${GITHUB_SHA::7}
+        run: ./eng/install-local.sh 0.0.0-${GITHUB_SHA::7}
 
       - name: Diff
         run: delta-build diff --base ${{ github.event.pull_request.base.sha }} --explain --detailed
@@ -34,7 +34,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Install delta-build
-        run: ./install-local.sh 0.0.0-${GITHUB_SHA::7}
+        run: ./eng/install-local.sh 0.0.0-${GITHUB_SHA::7}
 
       - name: Fetch base commit
         run: git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
@@ -53,7 +53,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Install delta-build
-        run: ./install-local.sh 0.0.0-${GITHUB_SHA::7}
+        run: ./eng/install-local.sh 0.0.0-${GITHUB_SHA::7}
 
       - name: Restore base snapshot from cache
         id: cache
@@ -85,7 +85,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Install delta-build
-        run: ./install-local.sh 0.0.0-${GITHUB_SHA::7}
+        run: ./eng/install-local.sh 0.0.0-${GITHUB_SHA::7}
 
       - name: Restore base snapshot from cache
         id: cache
@@ -120,7 +120,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Install delta-build
-        run: ./install-local.sh 0.0.0-${GITHUB_SHA::7}
+        run: ./eng/install-local.sh 0.0.0-${GITHUB_SHA::7}
 
       - name: Download base snapshot
         uses: actions/download-artifact@v4

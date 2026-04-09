@@ -1,8 +1,25 @@
 <Solution>
+  <Folder Name="/.github/" />
+  <Folder Name="/.github/workflows/">
+    <File Path=".github\workflows\dotnet.yml" />
+    <File Path=".github\workflows\publish.yml" />
+    <File Path=".github\workflows\smoketest.yml" />
+  </Folder>
+  <Folder Name="/docs/">
+    <File Path="docs\ci-integration.md" />
+    <File Path="docs\nuget-package-tracking.md" />
+    <File Path="docs\shallow-clones.md" />
+  </Folder>
+  <Folder Name="/eng/">
+    <File Path="eng\install-local.ps1" />
+    <File Path="eng\install-local.sh" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/delta-build/delta-build.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="DeltaBuild.Benchmarks/DeltaBuild.Benchmarks.csproj" />
     <Project Path="tests/DeltaBuild.Tests/DeltaBuild.Tests.csproj" />
     <Project Path="tests/DeltaBuild.TestUtils/DeltaBuild.TestUtils.csproj" />
   </Folder>
-  <Project Path="delta-build/delta-build.csproj" />
 </Solution>

@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\delta-build\delta-build.csproj"/>
+    <ProjectReference Include="..\src\delta-build\delta-build.csproj"/>
     <ProjectReference Include="..\tests\DeltaBuild.TestUtils\DeltaBuild.TestUtils.csproj"/>
   </ItemGroup>
 
