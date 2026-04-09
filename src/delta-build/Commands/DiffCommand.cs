@@ -73,6 +73,14 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
             "Can be specified multiple times.")]
         public string[] Ignore { get; init; } = [];
 
+        [CommandOption("--ignore-project <pattern>")]
+        [Description(
+            "Glob pattern for projects to exclude from the diff. " +
+            "Projects matching any pattern are treated as unchanged and will not cause dependents to be marked as affected. " +
+            "Supports * and ? wildcards and ** for recursive matching. " +
+            "Can be specified multiple times.")]
+        public string[] IgnoreProject { get; init; } = [];
+
         [CommandOption("--explain")]
         [Description("Write a colored tree view of the affected projects to stderr alongside the normal output.")]
         public bool Explain { get; init; }
@@ -212,7 +220,8 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
 
 
         var ignore = settings.Ignore.Length > 0 ? new GlobMatcher(settings.Ignore) : null;
-        var diff = DiffCalculator.Calculate(baseSnapshot, headSnapshot, ignore);
+        var ignoreProject = settings.IgnoreProject.Length > 0 ? new GlobMatcher(settings.IgnoreProject) : null;
+        var diff = DiffCalculator.Calculate(baseSnapshot, headSnapshot, ignore, ignoreProject);
 
         var outputProjects = diff.Projects
             .Where(it => ShouldInclude(it, settings))

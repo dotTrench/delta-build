@@ -15,7 +15,7 @@ public sealed class EntrypointDiscoveryTests : IDisposable
     public void Dispose() => _repo.Dispose();
 
     [Test]
-    public async Task ReturnsNotFound_WhenDirectoryIsEmpty()
+    public async Task ReturnsNotFound_WhenDirectoryIsEmpty(CancellationToken cancellationToken)
     {
         var result = EntrypointDiscovery.Discover(_repo.WorkingDirectory);
 
@@ -23,9 +23,9 @@ public sealed class EntrypointDiscoveryTests : IDisposable
     }
 
     [Test]
-    public async Task ReturnsNotFound_WhenNoSolutionOrProjectFiles()
+    public async Task ReturnsNotFound_WhenNoSolutionOrProjectFiles(CancellationToken cancellationToken)
     {
-        _repo.WriteFile("README.md", "hello");
+        await _repo.WriteFileAsync("README.md", "hello", cancellationToken);
 
         var result = EntrypointDiscovery.Discover(_repo.WorkingDirectory);
 
@@ -33,9 +33,9 @@ public sealed class EntrypointDiscoveryTests : IDisposable
     }
 
     [Test]
-    public async Task ReturnsSolution_WhenSingleSlnFound()
+    public async Task ReturnsSolution_WhenSingleSlnFound(CancellationToken cancellationToken)
     {
-        _repo.WriteFile("MyApp.sln", "");
+        await _repo.WriteFileAsync("MyApp.sln", "", cancellationToken);
 
         var result = EntrypointDiscovery.Discover(_repo.WorkingDirectory);
 
@@ -45,9 +45,9 @@ public sealed class EntrypointDiscoveryTests : IDisposable
     }
 
     [Test]
-    public async Task ReturnsSolution_WhenSingleSlnxFound()
+    public async Task ReturnsSolution_WhenSingleSlnxFound(CancellationToken cancellationToken)
     {
-        _repo.WriteFile("MyApp.slnx", "");
+        await _repo.WriteFileAsync("MyApp.slnx", "", cancellationToken);
 
         var result = EntrypointDiscovery.Discover(_repo.WorkingDirectory);
 
@@ -57,9 +57,9 @@ public sealed class EntrypointDiscoveryTests : IDisposable
     }
 
     [Test]
-    public async Task ReturnsSolution_WhenSingleSlnfFound()
+    public async Task ReturnsSolution_WhenSingleSlnfFound(CancellationToken cancellationToken)
     {
-        _repo.WriteFile("MyApp.slnf", "");
+        await _repo.WriteFileAsync("MyApp.slnf", "", cancellationToken);
 
         var result = EntrypointDiscovery.Discover(_repo.WorkingDirectory);
 
@@ -69,11 +69,10 @@ public sealed class EntrypointDiscoveryTests : IDisposable
     }
 
     [Test]
-    public async Task ReturnsAmbiguous_WhenMultipleSolutionFilesFound()
+    public async Task ReturnsAmbiguous_WhenMultipleSolutionFilesFound(CancellationToken cancellationToken)
     {
-        _repo
-            .WriteFile("First.sln", "")
-            .WriteFile("Second.sln", "");
+        await _repo.WriteFileAsync("First.sln", "", cancellationToken);
+        await _repo.WriteFileAsync("Second.sln", "", cancellationToken);
 
         var result = EntrypointDiscovery.Discover(_repo.WorkingDirectory);
 
@@ -81,11 +80,10 @@ public sealed class EntrypointDiscoveryTests : IDisposable
     }
 
     [Test]
-    public async Task ReturnsAmbiguous_WhenMixedSolutionFormatsFound()
+    public async Task ReturnsAmbiguous_WhenMixedSolutionFormatsFound(CancellationToken cancellationToken)
     {
-        _repo
-            .WriteFile("MyApp.sln", "")
-            .WriteFile("MyApp.slnx", "");
+        await _repo.WriteFileAsync("MyApp.sln", "", cancellationToken);
+        await _repo.WriteFileAsync("MyApp.slnx", "", cancellationToken);
 
         var result = EntrypointDiscovery.Discover(_repo.WorkingDirectory);
 
@@ -93,11 +91,10 @@ public sealed class EntrypointDiscoveryTests : IDisposable
     }
 
     [Test]
-    public async Task ReturnsAmbiguous_CandidatesContainAllSolutionFiles()
+    public async Task ReturnsAmbiguous_CandidatesContainAllSolutionFiles(CancellationToken cancellationToken)
     {
-        _repo
-            .WriteFile("First.sln", "")
-            .WriteFile("Second.sln", "");
+        await _repo.WriteFileAsync("First.sln", "", cancellationToken);
+        await _repo.WriteFileAsync("Second.sln", "", cancellationToken);
 
         var result = EntrypointDiscovery.Discover(_repo.WorkingDirectory);
 
@@ -106,7 +103,7 @@ public sealed class EntrypointDiscoveryTests : IDisposable
     }
 
     [Test]
-    public async Task ReturnsProjects_WhenNoSolutionButCsprojsFound()
+    public async Task ReturnsProjects_WhenNoSolutionButCsprojsFound(CancellationToken cancellationToken)
     {
         _repo
             .CreateCsproj("src/Core/Core.csproj")
@@ -119,7 +116,7 @@ public sealed class EntrypointDiscoveryTests : IDisposable
     }
 
     [Test]
-    public async Task ReturnsProjects_RecursivelyFindsNestedCsprojFiles()
+    public async Task ReturnsProjects_RecursivelyFindsNestedCsprojFiles(CancellationToken cancellationToken)
     {
         _repo
             .CreateCsproj("src/Core/Core.csproj")
@@ -132,11 +129,10 @@ public sealed class EntrypointDiscoveryTests : IDisposable
     }
 
     [Test]
-    public async Task PrefersSolution_OverCsprojFiles()
+    public async Task PrefersSolution_OverCsprojFiles(CancellationToken cancellationToken)
     {
-        _repo
-            .WriteFile("MyApp.sln", "")
-            .CreateCsproj("src/Core/Core.csproj");
+        await _repo.WriteFileAsync("MyApp.sln", "", cancellationToken);
+        _repo.CreateCsproj("src/Core/Core.csproj");
 
         var result = EntrypointDiscovery.Discover(_repo.WorkingDirectory);
 
@@ -146,11 +142,10 @@ public sealed class EntrypointDiscoveryTests : IDisposable
     }
 
     [Test]
-    public async Task DoesNotRecurseForSolutionFiles()
+    public async Task DoesNotRecurseForSolutionFiles(CancellationToken cancellationToken)
     {
-        _repo
-            .WriteFile("nested/MyApp.sln", "")
-            .CreateCsproj("src/Core/Core.csproj");
+        await _repo.CreateSlnAsync("nested/MyApp.sln", cancellationToken: cancellationToken);
+        _repo.CreateCsproj("src/Core/Core.csproj");
 
         var result = EntrypointDiscovery.Discover(_repo.WorkingDirectory);
 

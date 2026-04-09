@@ -18,9 +18,9 @@ public class SnapshotCommandTests
     {
         using var repo = TestRepository.Create();
 
+        repo.CreateCsproj("src/Core/Core.csproj");
+        await repo.WriteFileAsync("src/Core/Sample.cs", cancellationToken: cancellationToken);
         repo
-            .CreateCsproj("src/Core/Core.csproj")
-            .WriteFile("src/Core/Sample.cs")
             .CreateCsproj("src/App/App.csproj", x => x.AddItem("ProjectReference", @"..\Core\Core.csproj"))
             .Commit("Initial commit");
 
@@ -126,10 +126,9 @@ public class SnapshotCommandTests
     public async Task ReturnsExitCode1_WhenEntrypointsAreAmbiguous(CancellationToken cancellationToken)
     {
         using var repo = TestRepository.Create();
-        repo
-            .WriteFile("First.sln", "")
-            .WriteFile("Second.sln", "")
-            .Commit("Initial commit");
+        await repo.WriteFileAsync("First.sln", "", cancellationToken);
+        await repo.WriteFileAsync("Second.sln", "", cancellationToken);
+        repo.Commit("Initial commit");
 
         var app = BuildApp(repo);
         var result = await app.RunAsync(["snapshot"], cancellationToken);
@@ -141,7 +140,8 @@ public class SnapshotCommandTests
     public async Task ReturnsExitCode1_WhenNoEntrypointsFound(CancellationToken cancellationToken)
     {
         using var repo = TestRepository.Create();
-        repo.WriteFile("README.md", "hello").Commit("Initial commit");
+        await repo.WriteFileAsync("README.md", "hello", cancellationToken);
+        repo.Commit("Initial commit");
 
         var app = BuildApp(repo);
         var result = await app.RunAsync(["snapshot"], cancellationToken);
