@@ -17,7 +17,7 @@
     <PackageReference Include="Microsoft.Build.Locator" Version="1.11.2"/>
     <PackageReference Include="LibGit2Sharp" Version="0.31.0"/>
     <PackageReference Include="Spectre.Console.Cli.Testing" Version="0.55.0"/>
-    <PackageReference Include="TUnit" Version="1.30.0" />
+    <PackageReference Include="TUnit" Version="1.30.8" />
     <PackageReference Include="Verify.TUnit" Version="31.15.0" />
   </ItemGroup>
 
