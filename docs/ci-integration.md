@@ -54,7 +54,7 @@ jobs:
 
       - name: Restore base snapshot from cache
         id: cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: base-snapshot.json
           key: snapshot-${{ github.event.pull_request.base.sha }}
