@@ -475,6 +475,66 @@ public sealed class DiffCommandTests : IDisposable
     }
 
     [Test]
+    public async Task ReturnsExitCodeOnEmpty_WhenNoProjectsChanged(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .WriteFile("unrelated.txt", "hello")
+            .Commit("Add unrelated file");
+
+        var result = await BuildApp().RunAsync(
+            ["diff", "--base", baseCommit, "--exit-code-on-empty", "2"],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task ReturnsZero_WhenProjectsChanged_EvenIfExitCodeOnEmptySet(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .WriteFile("src/Core/Foo.cs", "public class Foo {}")
+            .Commit("Add Foo");
+
+        var result = await BuildApp().RunAsync(
+            ["diff", "--base", baseCommit, "--exit-code-on-empty", "2"],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task ReturnsZero_ByDefault_WhenNoProjectsChanged(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        _repo
+            .WriteFile("unrelated.txt", "hello")
+            .Commit("Add unrelated file");
+
+        var result = await BuildApp().RunAsync(
+            ["diff", "--base", baseCommit],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+    }
+
+    [Test]
     public async Task DoesNotLeaveWorktreesOrBranches_AfterDiff(CancellationToken cancellationToken)
     {
         _repo
