@@ -89,4 +89,37 @@ steps:
 
 ### With snapshot caching
 
-...
+Caches the base snapshot by target branch SHA so snapshot generation is skipped on subsequent
+runs against the same base. Useful for large repositories where snapshot generation is slow.
+
+```yaml
+# PR pipeline
+steps:
+  - checkout: self
+
+  - script: dotnet tool install -g delta-build
+    displayName: Install delta-build
+
+  - script: |
+      git fetch --depth=1 origin $(System.PullRequest.TargetBranchName)
+      BASE_SHA=$(git rev-parse origin/$(System.PullRequest.TargetBranchName))
+      echo "##vso[task.setvariable variable=BaseSha]$BASE_SHA"
+    displayName: Resolve target branch SHA
+
+  - task: Cache@2
+    inputs:
+      key: '"snapshot" | "$(BaseSha)"'
+      path: base-snapshot.json
+      cacheHitVar: SNAPSHOT_CACHE_HIT
+    displayName: Restore base snapshot from cache
+
+  - script: delta-build snapshot --commit $(BaseSha) --output base-snapshot.json
+    condition: ne(variables.SNAPSHOT_CACHE_HIT, 'true')
+    displayName: Generate base snapshot
+
+  - script: delta-build diff --base base-snapshot.json --output diff.sln
+    displayName: Find affected projects
+
+  - script: dotnet build diff.sln
+    displayName: Build affected projects
+```

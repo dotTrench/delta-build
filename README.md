@@ -89,6 +89,7 @@ delta-build diff --base main --format sln --output affected.sln
 | `--detailed`              | When combined with --explain prints more detailed view of diff to stderr            | `false`       |
 | `--format <format>`       | Output format: `plain`, `json`, `sln`, `slnx`                                       | `plain`       |
 | `--output <path>`         | Write output to file                                                                | stdout        |
+| `--exit-code-on-empty`    | Exit code to return when no projects are outputted                                  | `0`           |
 
 ### `snapshot` - Save a build graph snapshot
 
