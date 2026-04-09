@@ -20,7 +20,7 @@
     <Project Path="src/delta-build/delta-build.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="DeltaBuild.Benchmarks/DeltaBuild.Benchmarks.csproj" />
+    <Project Path="tests/DeltaBuild.Benchmarks/DeltaBuild.Benchmarks.csproj" />
     <Project Path="tests/DeltaBuild.Tests/DeltaBuild.Tests.csproj" />
     <Project Path="tests/DeltaBuild.TestUtils/DeltaBuild.TestUtils.csproj" />
   </Folder>
