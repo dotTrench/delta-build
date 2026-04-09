@@ -105,6 +105,12 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
         [Description("Overwrite the --output file if it already exists.")]
         public bool Overwrite { get; init; }
 
+
+        [CommandOption("--exit-code-on-empty")]
+        [Description("Exit code when no projects are outputted")]
+        [DefaultValue(0)]
+        public int ExitCodeOnEmpty { get; init; } = 0;
+
         public enum OutputFormat
         {
             Plain,
@@ -219,6 +225,11 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
         if (settings.Explain)
         {
             DiffRenderer.Render(_console, !settings.Detailed ? outputProjects : diff.Projects, settings.Detailed);
+        }
+
+        if (outputProjects.Count == 0)
+        {
+            return settings.ExitCodeOnEmpty;
         }
 
         return 0;

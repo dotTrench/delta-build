@@ -77,10 +77,10 @@ steps:
   - script: dotnet tool install -g delta-build
     displayName: Install delta-build
 
-  - script: git fetch --depth=1 origin $(System.PullRequest.TargetBranch)
+  - script: git fetch --depth=1 origin $(System.PullRequest.TargetBranchName)
     displayName: Fetch base commit
 
-  - script: delta-build diff --base "$(System.PullRequest.TargetBranch)" --output diff.sln
+  - script: delta-build diff --base "$(System.PullRequest.TargetBranchName)" --output diff.sln
     displayName: Find affected projects
 
   - script: dotnet build diff.sln
@@ -89,29 +89,4 @@ steps:
 
 ### With snapshot caching
 
-```yaml
-# PR pipeline
-steps:
-  - checkout: self
-
-  - script: dotnet tool install -g delta-build
-    displayName: Install delta-build
-
-  - task: Cache@2
-    inputs:
-      key: snapshot | "$(System.PullRequest.TargetBranch)"
-      path: base-snapshot.json
-    displayName: Restore base snapshot from cache
-
-  - script: |
-      git fetch --depth=1 origin $(System.PullRequest.TargetBranch)
-      delta-build snapshot --commit $(System.PullRequest.TargetBranch) --output base-snapshot.json
-    condition: ne(variables['CacheRestored'], 'true')
-    displayName: Generate base snapshot
-
-  - script: delta-build diff --base base-snapshot.json --output diff.sln
-    displayName: Find affected projects
-
-  - script: dotnet build diff.sln
-    displayName: Build affected projects
-```
+...
