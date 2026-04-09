@@ -101,6 +101,28 @@ public class SnapshotCommandTests
     }
 
     [Test]
+    public async Task IncludesProjectsFromBothEntrypoints_WhenMultipleCsprojsSpecified(CancellationToken cancellationToken)
+    {
+        using var repo = TestRepository.Create();
+        repo
+            .CreateCsproj("services/Auth/Auth.csproj")
+            .CreateCsproj("services/Api/Api.csproj")
+            .Commit("Initial commit");
+
+        var stdout = new InMemoryStandardOutput();
+        var app = BuildApp(repo, stdout);
+        var result = await app.RunAsync(
+            ["snapshot", "--entrypoint", "services/Auth/Auth.csproj", "--entrypoint", "services/Api/Api.csproj"],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Output);
+        var snapshot = SnapshotSerializer.Deserialize(stdout.GetBytes());
+        await Assert.That(snapshot.Projects.Count).IsEqualTo(2);
+        await Assert.That(snapshot.Projects).Contains(p => p.Path == "services/Auth/Auth.csproj");
+        await Assert.That(snapshot.Projects).Contains(p => p.Path == "services/Api/Api.csproj");
+    }
+
+    [Test]
     public async Task ReturnsExitCode1_WhenEntrypointsAreAmbiguous(CancellationToken cancellationToken)
     {
         using var repo = TestRepository.Create();

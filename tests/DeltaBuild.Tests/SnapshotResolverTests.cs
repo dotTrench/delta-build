@@ -82,10 +82,10 @@ public class SnapshotResolverTests
 
         var result = await resolver.ResolveAsync(
             repo.GetCurrentCommit(),
-            [new FileInfo(Path.Combine(repo.WorkingDirectory, "src/Nonexistent/Nonexistent.csproj"))],
+            ["src/Nonexistent/Nonexistent.csproj"],
             cancellationToken);
 
-        await Assert.That(result).IsTypeOf<SnapshotResolverResult.EntrypointNotFound>();
+        await Assert.That(result).IsTypeOf<SnapshotResolverResult.NoEntrypointsFound>();
     }
 
     [Test]

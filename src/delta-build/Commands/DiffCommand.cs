@@ -27,18 +27,18 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
 
         [CommandOption("-e|--entrypoint <project-or-solution>")]
         [Description(
-            "One or more solution or project files to use as the build graph entrypoint for both head and base. " +
+            "One or more solution or project files (or glob patterns) to use as the build graph entrypoint for both head and base. " +
             "If not specified, delta-build will attempt to discover entrypoints automatically."
         )]
-        public required FileInfo[] Entrypoints { get; init; } = [];
+        public required string[] Entrypoints { get; init; } = [];
 
         [CommandOption("--head-entrypoint <project-or-solution>")]
         [Description("Overrides --entrypoint for the head snapshot only.")]
-        public FileInfo[]? HeadEntrypoints { get; init; }
+        public string[]? HeadEntrypoints { get; init; }
 
         [CommandOption("--base-entrypoint <project-or-solution>")]
         [Description("Overrides --entrypoint for the base snapshot only.")]
-        public FileInfo[]? BaseEntrypoints { get; init; }
+        public string[]? BaseEntrypoints { get; init; }
 
         [CommandOption("--include-removed")]
         [DefaultValue(false)]
@@ -314,7 +314,7 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
     private async Task<Snapshot?> ResolveSnapshotAsync(
         SnapshotResolver resolver,
         string value,
-        IReadOnlyList<FileInfo> entrypoints,
+        IReadOnlyList<string> entrypoints,
         CancellationToken cancellationToken
     )
     {
@@ -332,9 +332,6 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
             case SnapshotResolverResult.CommitNotFound(var reference):
                 _console.MarkupLine($"[red]Could not find commit by reference '{reference}[/]");
                 return null;
-            case SnapshotResolverResult.EntrypointNotFound:
-                _console.MarkupLine("[red]Could not find entrypoint by reference[/]");
-                return null;
             case SnapshotResolverResult.AmbiguousEntrypoints(var candidates):
                 _console.MarkupLine("[red]Ambiguous entrypoints[/]");
                 foreach (var c in candidates)
@@ -344,6 +341,7 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
 
                 return null;
             case SnapshotResolverResult.NoEntrypointsFound:
+                _console.MarkupLine("[red]No entrypoints found[/]");
                 return null;
             default:
                 _console.MarkupLine($"[red]Unknown result{result}[/]");

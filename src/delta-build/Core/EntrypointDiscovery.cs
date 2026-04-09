@@ -1,3 +1,5 @@
+using Microsoft.Extensions.FileSystemGlobbing;
+
 namespace DeltaBuild.Cli.Core;
 
 public abstract record EntrypointDiscoveryResult
@@ -6,36 +8,45 @@ public abstract record EntrypointDiscoveryResult
 
     public record Ambiguous(IReadOnlyList<string> Candidates) : EntrypointDiscoveryResult;
 
-    public record NotFound() : EntrypointDiscoveryResult;
+    public record NotFound : EntrypointDiscoveryResult;
 }
-
 
 public static class EntrypointDiscovery
 {
     private static readonly string[] SolutionPatterns = ["*.sln", "*.slnx", "*.slnf"];
+    private static readonly string[] ProjectPatterns = ["**/*.csproj"];
 
     public static EntrypointDiscoveryResult Discover(string directory)
     {
-        var solutions = SolutionPatterns
-            .SelectMany(p => Directory.GetFiles(directory, p, SearchOption.TopDirectoryOnly))
-            .ToList();
+        var solutionResult = Resolve(directory, SolutionPatterns);
 
-        return solutions.Count switch
+        return solutionResult switch
         {
-            0 => DiscoverProjects(directory),
-            1 => new EntrypointDiscoveryResult.Success(solutions),
-            _ => new EntrypointDiscoveryResult.Ambiguous(solutions)
+            EntrypointDiscoveryResult.NotFound => Resolve(directory, ProjectPatterns),
+            _ => solutionResult
         };
     }
 
-    private static EntrypointDiscoveryResult DiscoverProjects(string directory)
-    {
-        var projects = Directory.GetFiles(directory, "*.csproj", SearchOption.AllDirectories).ToList();
+    private static readonly HashSet<string> SolutionExtensions =
+        new(StringComparer.OrdinalIgnoreCase) { ".sln", ".slnx", ".slnf" };
 
-        return projects.Count switch
-        {
-            0 => new EntrypointDiscoveryResult.NotFound(),
-            _ => new EntrypointDiscoveryResult.Success(projects)
-        };
+    public static EntrypointDiscoveryResult Resolve(string directory, IEnumerable<string> patterns)
+    {
+        var matcher = new Matcher(StringComparison.OrdinalIgnoreCase);
+        foreach (var pattern in patterns)
+            matcher.AddInclude(PathHelpers.Normalize(pattern));
+        var paths = matcher.GetResultsInFullPath(directory).ToList();
+
+        if (paths.Count == 0)
+            return new EntrypointDiscoveryResult.NotFound();
+
+        var solutionFiles = paths
+            .Where(p => SolutionExtensions.Contains(Path.GetExtension(p)))
+            .ToList();
+
+        if (solutionFiles.Count > 1)
+            return new EntrypointDiscoveryResult.Ambiguous(solutionFiles);
+
+        return new EntrypointDiscoveryResult.Success(paths);
     }
 }
