@@ -1,0 +1,12 @@
+version: 2
+updates:
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    ignore:
+      # Pin MSBuild dependencies for .NET 8/9/10 compatibility
+      - dependency-name: "Microsoft.Build"
+      - dependency-name: "Microsoft.Build.Framework"
+      - dependency-name: "Microsoft.Build.Utilities.Core"
+      - dependency-name: "Microsoft.NET.StringTools"
