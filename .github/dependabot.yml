@@ -10,3 +10,8 @@ updates:
       - dependency-name: "Microsoft.Build.Framework"
       - dependency-name: "Microsoft.Build.Utilities.Core"
       - dependency-name: "Microsoft.NET.StringTools"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
