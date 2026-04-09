@@ -345,4 +345,96 @@ public class DiffCalculatorTests
         var app = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/App/App.csproj");
         await Assert.That(app.State).IsEqualTo(ProjectState.Affected);
     }
+
+    [Test]
+    public async Task Unchanged_WhenModifiedProjectIsIgnored()
+    {
+        var @base = BuildSnapshot("abc",
+            new() { ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1" }, []) });
+
+        var head = BuildSnapshot("def",
+            new() { ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash2" }, []) });
+
+        var result = DiffCalculator.Calculate(@base, head, ignoreProject: new GlobMatcher(["src/Core/Core.csproj"]));
+
+        var core = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/Core/Core.csproj");
+        await Assert.That(core.State).IsEqualTo(ProjectState.Unchanged);
+    }
+
+    [Test]
+    public async Task Unchanged_WhenDependentOfIgnoredModifiedProject()
+    {
+        var @base = BuildSnapshot("abc",
+            new()
+            {
+                ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1" }, []),
+                ["src/App/App.csproj"] = (new() { ["src/App/App.csproj"] = "hash2" }, ["src/Core/Core.csproj"])
+            });
+
+        var head = BuildSnapshot("def",
+            new()
+            {
+                ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash3" }, []), // changed, but ignored
+                ["src/App/App.csproj"] = (new() { ["src/App/App.csproj"] = "hash2" }, ["src/Core/Core.csproj"])
+            });
+
+        var result = DiffCalculator.Calculate(@base, head, ignoreProject: new GlobMatcher(["src/Core/Core.csproj"]));
+
+        var core = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/Core/Core.csproj");
+        await Assert.That(core.State).IsEqualTo(ProjectState.Unchanged);
+
+        var app = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/App/App.csproj");
+        await Assert.That(app.State).IsEqualTo(ProjectState.Unchanged);
+    }
+
+    [Test]
+    public async Task Unchanged_WhenAddedProjectIsIgnored()
+    {
+        var head = BuildSnapshot("def",
+            new() { ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1" }, []) });
+
+        var result = DiffCalculator.Calculate(EmptySnapshot(), head, ignoreProject: new GlobMatcher(["src/Core/Core.csproj"]));
+
+        var core = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/Core/Core.csproj");
+        await Assert.That(core.State).IsEqualTo(ProjectState.Unchanged);
+    }
+
+    [Test]
+    public async Task Unchanged_WhenRemovedProjectIsIgnored()
+    {
+        var @base = BuildSnapshot("abc",
+            new() { ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1" }, []) });
+
+        var result = DiffCalculator.Calculate(@base, EmptySnapshot(), ignoreProject: new GlobMatcher(["src/Core/Core.csproj"]));
+
+        var core = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/Core/Core.csproj");
+        await Assert.That(core.State).IsEqualTo(ProjectState.Unchanged);
+    }
+
+    [Test]
+    public async Task IgnoreProject_SupportsGlobPattern()
+    {
+        var @base = BuildSnapshot("abc",
+            new()
+            {
+                ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1" }, []),
+                ["src/App/App.csproj"] = (new() { ["src/App/App.csproj"] = "hash2" }, [])
+            });
+
+        var head = BuildSnapshot("def",
+            new()
+            {
+                ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash3" }, []), // changed
+                ["src/App/App.csproj"] = (new() { ["src/App/App.csproj"] = "hash4" }, [])  // changed
+            });
+
+        // Ignore only Core
+        var result = DiffCalculator.Calculate(@base, head, ignoreProject: new GlobMatcher(["**/Core.csproj"]));
+
+        var core = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/Core/Core.csproj");
+        await Assert.That(core.State).IsEqualTo(ProjectState.Unchanged);
+
+        var app = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/App/App.csproj");
+        await Assert.That(app.State).IsEqualTo(ProjectState.Modified);
+    }
 }

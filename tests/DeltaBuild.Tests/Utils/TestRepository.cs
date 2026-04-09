@@ -28,6 +28,18 @@ public sealed class TestRepository : IDisposable
         return this;
     }
 
+    public async Task<TestRepository> WriteFileAsync(
+        string relativePath,
+        string content = "",
+        CancellationToken cancellationToken = default
+    )
+    {
+        var fullPath = Path.Combine(WorkingDirectory, relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+        await File.WriteAllTextAsync(fullPath, content, cancellationToken);
+        return this;
+    }
+
     public TestRepository CreateCsproj(string relativePath, Action<ProjectRootElement>? configuration = null)
     {
         var root = ProjectRootElement.Create(NewProjectFileOptions.None);
@@ -37,6 +49,19 @@ public sealed class TestRepository : IDisposable
 
         root.Save(Path.Combine(WorkingDirectory, relativePath));
 
+        return this;
+    }
+
+    public TestRepository UpdateCsProj(string relativePath, Action<ProjectRootElement> configuration)
+    {
+        var root = ProjectRootElement.Open(Path.Combine(WorkingDirectory, relativePath));
+        if (root is null)
+        {
+            throw new ArgumentNullException(nameof(relativePath), $"Project {relativePath} could not be found");
+        }
+        configuration(root);
+
+        root.Save();
         return this;
     }
 

@@ -92,7 +92,9 @@ public class SnapshotResolverTests
     public async Task AmbiguousEntrypoints_WhenMultipleSolutionsDiscovered(CancellationToken cancellationToken)
     {
         using var repo = TestRepository.Create();
-        repo.WriteFile("First.sln", "").WriteFile("Second.sln", "").Commit("initial");
+        await repo.WriteFileAsync("First.sln", "", cancellationToken);
+        await repo.WriteFileAsync("Second.sln", "", cancellationToken);
+        repo.Commit("initial");
 
         var gitRepo = await GitRepository.DiscoverAsync(repo.WorkingDirectory, cancellationToken)
                       ?? throw new InvalidOperationException();
@@ -110,7 +112,8 @@ public class SnapshotResolverTests
     public async Task NoEntrypointsFound_WhenNoSolutionsDiscovered(CancellationToken cancellationToken)
     {
         using var repo = TestRepository.Create();
-        repo.WriteFile("README.md", "hello").Commit("initial");
+        await repo.WriteFileAsync("README.md", "hello", cancellationToken);
+        repo.Commit("initial");
 
         var gitRepo = await GitRepository.DiscoverAsync(repo.WorkingDirectory, cancellationToken)
                       ?? throw new InvalidOperationException();

@@ -6,7 +6,12 @@ namespace DeltaBuild.Cli.Core.Diff;
 
 public static class DiffCalculator
 {
-    public static DiffResult Calculate(Snapshot baseSnapshot, Snapshot headSnapshot, GlobMatcher? ignore = null)
+    public static DiffResult Calculate(
+        Snapshot baseSnapshot,
+        Snapshot headSnapshot,
+        GlobMatcher? ignore = null,
+        GlobMatcher? ignoreProject = null
+    )
     {
         var baseProjects = baseSnapshot.Projects.ToFrozenDictionary(it => it.Path);
         var headProjects = headSnapshot.Projects.ToFrozenDictionary(it => it.Path);
@@ -17,9 +22,12 @@ public static class DiffCalculator
         {
             if (!baseProjects.ContainsKey(project.Path))
             {
+                var state = ignoreProject?.IsIgnored(project.Path) == true
+                    ? ProjectState.Unchanged
+                    : ProjectState.Added;
                 results[project.Path] = new ProjectDiffResult(
                     project.Path,
-                    ProjectState.Added,
+                    state,
                     [],
                     GetFileDiffs(
                         baseProject: null,
@@ -33,9 +41,12 @@ public static class DiffCalculator
         {
             if (!headProjects.ContainsKey(project.Path))
             {
+                var state = ignoreProject?.IsIgnored(project.Path) == true
+                    ? ProjectState.Unchanged
+                    : ProjectState.Removed;
                 results[project.Path] = new ProjectDiffResult(
                     project.Path,
-                    ProjectState.Removed,
+                    state,
                     [],
                     GetFileDiffs(baseProject: project, headProject: null, ignore)
                 );
@@ -56,6 +67,11 @@ public static class DiffCalculator
                 ignore
             );
 
+            if (ignoreProject?.IsIgnored(project) == true)
+            {
+                results[project] = new ProjectDiffResult(project, ProjectState.Unchanged, [], fileDiffs);
+                continue;
+            }
 
             if (IsModified(fileDiffs))
             {
@@ -76,7 +92,8 @@ public static class DiffCalculator
             .OrderBy(it =>
                 headProjects.TryGetValue(it.Path, out var h) ? h.TopologicalOrder :
                 baseProjects.TryGetValue(it.Path, out var b) ? b.TopologicalOrder :
-                int.MaxValue)
+                int.MaxValue
+            )
             .ThenBy(it => it.Path)
             .ToList();
         return new DiffResult(projects);

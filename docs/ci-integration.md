@@ -21,10 +21,17 @@ jobs:
         run: git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
 
       - name: Find affected projects
+        id: diff
+        continue-on-error: true
         run: delta-build diff --base ${{ github.event.pull_request.base.sha }} --output diff.sln
 
       - name: Build affected projects
+        if: steps.diff.outcome == 'success'
         run: dotnet build diff.sln
+
+      - name: Build all projects (fallback)
+        if: steps.diff.outcome != 'success'
+        run: dotnet build
 ```
 
 ### With snapshot caching
@@ -54,15 +61,23 @@ jobs:
 
       - name: Generate base snapshot
         if: steps.cache.outputs.cache-hit != 'true'
+        continue-on-error: true
         run: |
           git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
           delta-build snapshot --commit ${{ github.event.pull_request.base.sha }} --output base-snapshot.json
 
       - name: Find affected projects
+        id: diff
+        continue-on-error: true
         run: delta-build diff --base base-snapshot.json --output diff.sln
 
       - name: Build affected projects
+        if: steps.diff.outcome == 'success'
         run: dotnet build diff.sln
+
+      - name: Build all projects (fallback)
+        if: steps.diff.outcome != 'success'
+        run: dotnet build
 ```
 
 ## Azure DevOps
@@ -82,9 +97,16 @@ steps:
 
   - script: delta-build diff --base "$(System.PullRequest.TargetBranchName)" --output diff.sln
     displayName: Find affected projects
+    continueOnError: true
+    name: diff
 
   - script: dotnet build diff.sln
     displayName: Build affected projects
+    condition: eq(variables['diff.result'], 'succeeded')
+
+  - script: dotnet build
+    displayName: Build all projects (fallback)
+    condition: eq(variables['diff.result'], 'failed')
 ```
 
 ### With snapshot caching
@@ -115,11 +137,19 @@ steps:
 
   - script: delta-build snapshot --commit $(BaseSha) --output base-snapshot.json
     condition: ne(variables.SNAPSHOT_CACHE_HIT, 'true')
+    continueOnError: true
     displayName: Generate base snapshot
 
   - script: delta-build diff --base base-snapshot.json --output diff.sln
     displayName: Find affected projects
+    continueOnError: true
+    name: diff
 
   - script: dotnet build diff.sln
     displayName: Build affected projects
+    condition: eq(variables['diff.result'], 'succeeded')
+
+  - script: dotnet build
+    displayName: Build all projects (fallback)
+    condition: eq(variables['diff.result'], 'failed')
 ```

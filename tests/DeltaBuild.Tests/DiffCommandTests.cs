@@ -47,9 +47,8 @@ public sealed class DiffCommandTests : IDisposable
 
         var baseCommit = _repo.GetCurrentCommit();
 
-        _repo
-            .WriteFile("src/Core/Foo.cs", "public class Foo {}")
-            .Commit("Add Foo");
+        await _repo.WriteFileAsync("src/Core/Foo.cs", "public class Foo {}", cancellationToken);
+        _repo.Commit("Add Foo");
 
         var stdout = new InMemoryStandardOutput();
         var result = await BuildApp(stdout).RunAsync(
@@ -72,9 +71,8 @@ public sealed class DiffCommandTests : IDisposable
 
         var baseCommit = _repo.GetCurrentCommit();
 
-        _repo
-            .WriteFile("src/Core/Foo.cs", "public class Foo {}")
-            .Commit("Add Foo");
+        await _repo.WriteFileAsync("src/Core/Foo.cs", "public class Foo {}", cancellationToken);
+        _repo.Commit("Add Foo");
 
         var stdout = new InMemoryStandardOutput();
         var result = await BuildApp(stdout).RunAsync(
@@ -100,9 +98,8 @@ public sealed class DiffCommandTests : IDisposable
 
         var baseCommit = _repo.GetCurrentCommit();
 
-        _repo
-            .WriteFile("src/Core/Foo.cs", "public class Foo {}")
-            .Commit("Add Foo");
+        await _repo.WriteFileAsync("src/Core/Foo.cs", "public class Foo {}", cancellationToken);
+        _repo.Commit("Add Foo");
 
         var stdout = new InMemoryStandardOutput();
         var result = await BuildApp(stdout).RunAsync(
@@ -124,9 +121,8 @@ public sealed class DiffCommandTests : IDisposable
 
         var baseCommit = _repo.GetCurrentCommit();
 
-        _repo
-            .WriteFile("src/Core/Foo.cs", "public class Foo {}")
-            .Commit("Add Foo");
+        await _repo.WriteFileAsync("src/Core/Foo.cs", "public class Foo {}", cancellationToken);
+        _repo.Commit("Add Foo");
 
         var stdout = new InMemoryStandardOutput();
         var result = await BuildApp(stdout).RunAsync(
@@ -190,16 +186,14 @@ public sealed class DiffCommandTests : IDisposable
     [Test]
     public async Task OutputsProject_WhenRootDirectoryBuildPropsModified(CancellationToken cancellationToken)
     {
-        _repo
-            .CreateCsproj("src/Core/Core.csproj")
-            .WriteFile("Directory.Build.props", "<Project />")
-            .Commit("Initial commit");
+        _repo.CreateCsproj("src/Core/Core.csproj");
+        await _repo.WriteFileAsync("Directory.Build.props", "<Project />", cancellationToken);
+        _repo.Commit("Initial commit");
 
         var baseCommit = _repo.GetCurrentCommit();
 
-        _repo
-            .WriteFile("Directory.Build.props", "<Project><PropertyGroup><LangVersion>latest</LangVersion></PropertyGroup></Project>")
-            .Commit("Update Directory.Build.props");
+        await _repo.WriteFileAsync("Directory.Build.props", "<Project><PropertyGroup><LangVersion>latest</LangVersion></PropertyGroup></Project>", cancellationToken);
+        _repo.Commit("Update Directory.Build.props");
 
         var stdout = new InMemoryStandardOutput();
         var result = await BuildApp(stdout).RunAsync(
@@ -219,15 +213,14 @@ public sealed class DiffCommandTests : IDisposable
         _repo
             .CreateCsproj("tools/Tool.csproj")
             .CreateCsproj("src/Core/Core.csproj")
-            .CreateCsproj("src/App/App.csproj")
-            .WriteFile("src/Directory.Build.props", "<Project />")
-            .Commit("Initial commit");
+            .CreateCsproj("src/App/App.csproj");
+        await _repo.WriteFileAsync("src/Directory.Build.props", "<Project />", cancellationToken);
+        _repo.Commit("Initial commit");
 
         var baseCommit = _repo.GetCurrentCommit();
 
-        _repo
-            .WriteFile("src/Directory.Build.props", "<Project><PropertyGroup><Nullable>enable</Nullable></PropertyGroup></Project>")
-            .Commit("Enable nullable in src");
+        await _repo.WriteFileAsync("src/Directory.Build.props", "<Project><PropertyGroup><Nullable>enable</Nullable></PropertyGroup></Project>", cancellationToken);
+        _repo.Commit("Enable nullable in src");
 
         var stdout = new InMemoryStandardOutput();
         var result = await BuildApp(stdout).RunAsync(
@@ -251,16 +244,15 @@ public sealed class DiffCommandTests : IDisposable
         // projects that directly import it (i.e. tools/Tool.csproj, which has no closer one).
         _repo
             .CreateCsproj("tools/Tool.csproj")
-            .CreateCsproj("src/Core/Core.csproj")
-            .WriteFile("Directory.Build.props", "<Project />")
-            .WriteFile("src/Directory.Build.props", "<Project />")
-            .Commit("Initial commit");
+            .CreateCsproj("src/Core/Core.csproj");
+        await _repo.WriteFileAsync("Directory.Build.props", "<Project />", cancellationToken);
+        await _repo.WriteFileAsync("src/Directory.Build.props", "<Project />", cancellationToken);
+        _repo.Commit("Initial commit");
 
         var baseCommit = _repo.GetCurrentCommit();
 
-        _repo
-            .WriteFile("Directory.Build.props", "<Project><PropertyGroup><LangVersion>latest</LangVersion></PropertyGroup></Project>")
-            .Commit("Update root Directory.Build.props");
+        await _repo.WriteFileAsync("Directory.Build.props", "<Project><PropertyGroup><LangVersion>latest</LangVersion></PropertyGroup></Project>", cancellationToken);
+        _repo.Commit("Update root Directory.Build.props");
 
         var stdout = new InMemoryStandardOutput();
         var result = await BuildApp(stdout).RunAsync(
@@ -281,16 +273,15 @@ public sealed class DiffCommandTests : IDisposable
         // Changing only the src/ one should affect src/ projects but not tools/.
         _repo
             .CreateCsproj("tools/Tool.csproj")
-            .CreateCsproj("src/Core/Core.csproj")
-            .WriteFile("Directory.Build.props", "<Project />")
-            .WriteFile("src/Directory.Build.props", "<Project />")
-            .Commit("Initial commit");
+            .CreateCsproj("src/Core/Core.csproj");
+        await _repo.WriteFileAsync("Directory.Build.props", "<Project />", cancellationToken);
+        await _repo.WriteFileAsync("src/Directory.Build.props", "<Project />", cancellationToken);
+        _repo.Commit("Initial commit");
 
         var baseCommit = _repo.GetCurrentCommit();
 
-        _repo
-            .WriteFile("src/Directory.Build.props", "<Project><PropertyGroup><Nullable>enable</Nullable></PropertyGroup></Project>")
-            .Commit("Update src Directory.Build.props");
+        await _repo.WriteFileAsync("src/Directory.Build.props", "<Project><PropertyGroup><Nullable>enable</Nullable></PropertyGroup></Project>", cancellationToken);
+        _repo.Commit("Update src Directory.Build.props");
 
         var stdout = new InMemoryStandardOutput();
         var result = await BuildApp(stdout).RunAsync(
@@ -307,16 +298,14 @@ public sealed class DiffCommandTests : IDisposable
     [Test]
     public async Task DoesNotOutputProject_WhenOnlyChangedFileIsIgnored(CancellationToken cancellationToken)
     {
-        _repo
-            .CreateCsproj("src/Core/Core.csproj")
-            .WriteFile("src/Core/appsettings.json", "{}")
-            .Commit("Initial commit");
+        _repo.CreateCsproj("src/Core/Core.csproj");
+        await _repo.WriteFileAsync("src/Core/appsettings.json", "{}", cancellationToken);
+        _repo.Commit("Initial commit");
 
         var baseCommit = _repo.GetCurrentCommit();
 
-        _repo
-            .WriteFile("src/Core/appsettings.json", "{ \"key\": \"value\" }")
-            .Commit("Update settings");
+        await _repo.WriteFileAsync("src/Core/appsettings.json", "{ \"key\": \"value\" }", cancellationToken);
+        _repo.Commit("Update settings");
 
         var stdout = new InMemoryStandardOutput();
         var result = await BuildApp(stdout).RunAsync(
@@ -330,16 +319,14 @@ public sealed class DiffCommandTests : IDisposable
     [Test]
     public async Task OutputsProject_WhenIgnorePatternDoesNotMatch(CancellationToken cancellationToken)
     {
-        _repo
-            .CreateCsproj("src/Core/Core.csproj")
-            .WriteFile("src/Core/appsettings.json", "{}")
-            .Commit("Initial commit");
+        _repo.CreateCsproj("src/Core/Core.csproj");
+        await _repo.WriteFileAsync("src/Core/appsettings.json", "{}", cancellationToken);
+        _repo.Commit("Initial commit");
 
         var baseCommit = _repo.GetCurrentCommit();
 
-        _repo
-            .WriteFile("src/Core/appsettings.json", "{ \"key\": \"value\" }")
-            .Commit("Update settings");
+        await _repo.WriteFileAsync("src/Core/appsettings.json", "{ \"key\": \"value\" }", cancellationToken);
+        _repo.Commit("Update settings");
 
         var stdout = new InMemoryStandardOutput();
         var result = await BuildApp(stdout).RunAsync(
@@ -354,18 +341,16 @@ public sealed class DiffCommandTests : IDisposable
     [Test]
     public async Task DoesNotOutputProject_WhenMultipleIgnorePatternsCoversAllChanges(CancellationToken cancellationToken)
     {
-        _repo
-            .CreateCsproj("src/Core/Core.csproj")
-            .WriteFile("src/Core/appsettings.json", "{}")
-            .WriteFile("src/Core/data.xml", "<root/>")
-            .Commit("Initial commit");
+        _repo.CreateCsproj("src/Core/Core.csproj");
+        await _repo.WriteFileAsync("src/Core/appsettings.json", "{}", cancellationToken);
+        await _repo.WriteFileAsync("src/Core/data.xml", "<root/>", cancellationToken);
+        _repo.Commit("Initial commit");
 
         var baseCommit = _repo.GetCurrentCommit();
 
-        _repo
-            .WriteFile("src/Core/appsettings.json", "{ \"key\": \"value\" }")
-            .WriteFile("src/Core/data.xml", "<root><item/></root>")
-            .Commit("Update config files");
+        await _repo.WriteFileAsync("src/Core/appsettings.json", "{ \"key\": \"value\" }", cancellationToken);
+        await _repo.WriteFileAsync("src/Core/data.xml", "<root><item/></root>", cancellationToken);
+        _repo.Commit("Update config files");
 
         var stdout = new InMemoryStandardOutput();
         var result = await BuildApp(stdout).RunAsync(
@@ -389,9 +374,8 @@ public sealed class DiffCommandTests : IDisposable
 
         var baseCommit = _repo.GetCurrentCommit();
 
-        _repo
-            .WriteFile("src/Z/Foo.cs", "public class Foo {}")
-            .Commit("Modify Z");
+        await _repo.WriteFileAsync("src/Z/Foo.cs", "public class Foo {}", cancellationToken);
+        _repo.Commit("Modify Z");
 
         var stdout = new InMemoryStandardOutput();
         var result = await BuildApp(stdout).RunAsync(
@@ -409,16 +393,14 @@ public sealed class DiffCommandTests : IDisposable
     [Test]
     public async Task OutputsProject_WhenExplicitlyImportedPropsFileModified(CancellationToken cancellationToken)
     {
-        _repo
-            .CreateCsproj("src/Core/Core.csproj", x => x.AddImport("../../build/common.props"))
-            .WriteFile("build/common.props", "<Project />")
-            .Commit("Initial commit");
+        _repo.CreateCsproj("src/Core/Core.csproj", x => x.AddImport("../../build/common.props"));
+        await _repo.WriteFileAsync("build/common.props", "<Project />", cancellationToken);
+        _repo.Commit("Initial commit");
 
         var baseCommit = _repo.GetCurrentCommit();
 
-        _repo
-            .WriteFile("build/common.props", "<Project><PropertyGroup><LangVersion>latest</LangVersion></PropertyGroup></Project>")
-            .Commit("Update common.props");
+        await _repo.WriteFileAsync("build/common.props", "<Project><PropertyGroup><LangVersion>latest</LangVersion></PropertyGroup></Project>", cancellationToken);
+        _repo.Commit("Update common.props");
 
         var stdout = new InMemoryStandardOutput();
         var result = await BuildApp(stdout).RunAsync(
@@ -483,9 +465,8 @@ public sealed class DiffCommandTests : IDisposable
 
         var baseCommit = _repo.GetCurrentCommit();
 
-        _repo
-            .WriteFile("unrelated.txt", "hello")
-            .Commit("Add unrelated file");
+        await _repo.WriteFileAsync("unrelated.txt", "hello", cancellationToken);
+        _repo.Commit("Add unrelated file");
 
         var result = await BuildApp().RunAsync(
             ["diff", "--base", baseCommit, "--exit-code-on-empty", "2"],
@@ -503,9 +484,8 @@ public sealed class DiffCommandTests : IDisposable
 
         var baseCommit = _repo.GetCurrentCommit();
 
-        _repo
-            .WriteFile("src/Core/Foo.cs", "public class Foo {}")
-            .Commit("Add Foo");
+        await _repo.WriteFileAsync("src/Core/Foo.cs", "public class Foo {}", cancellationToken);
+        _repo.Commit("Add Foo");
 
         var result = await BuildApp().RunAsync(
             ["diff", "--base", baseCommit, "--exit-code-on-empty", "2"],
@@ -523,15 +503,52 @@ public sealed class DiffCommandTests : IDisposable
 
         var baseCommit = _repo.GetCurrentCommit();
 
-        _repo
-            .WriteFile("unrelated.txt", "hello")
-            .Commit("Add unrelated file");
+        await _repo.WriteFileAsync("unrelated.txt", "hello", cancellationToken);
+        _repo.Commit("Add unrelated file");
 
         var result = await BuildApp().RunAsync(
             ["diff", "--base", baseCommit],
             cancellationToken);
 
         await Assert.That(result.ExitCode).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task EmptyOutput_WhenNoChangesBetweenCommits(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .Commit("Initial commit");
+
+        var commit = _repo.GetCurrentCommit();
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", commit, "--head", commit],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        await Assert.That(stdout.GetLines()).IsEmpty();
+    }
+
+    [Test]
+    public async Task EmptyOutput_WhenEntrypointHasNoProjects(CancellationToken cancellationToken)
+    {
+        await _repo.CreateSlnxAsync("empty.slnx", cancellationToken: cancellationToken);
+        _repo.Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        await _repo.WriteFileAsync("unrelated.txt", "hello", cancellationToken);
+        _repo.Commit("Add unrelated file");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit, "--entrypoint", "empty.slnx"],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        await Assert.That(stdout.GetLines()).IsEmpty();
     }
 
     [Test]
@@ -543,9 +560,8 @@ public sealed class DiffCommandTests : IDisposable
 
         var baseCommit = _repo.GetCurrentCommit();
 
-        _repo
-            .WriteFile("src/Core/Foo.cs", "public class Foo {}")
-            .Commit("Add Foo");
+        await _repo.WriteFileAsync("src/Core/Foo.cs", "public class Foo {}", cancellationToken);
+        _repo.Commit("Add Foo");
 
         var app = BuildApp();
         var result = await app.RunAsync(["diff", "--base", baseCommit], cancellationToken);
