@@ -103,7 +103,7 @@ jobs:
         run: delta-build snapshot --commit ${{ github.event.pull_request.base.sha }} --output base-snapshot.json
 
       - name: Upload base snapshot
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: base-snapshot-${{ github.event.pull_request.base.sha }}
           path: base-snapshot.json
