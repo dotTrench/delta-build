@@ -18,7 +18,7 @@ public sealed class TestRepository : IDisposable
         _repository = new Repository(repoPath);
     }
 
-    public string WorkingDirectory => _repository.Info.WorkingDirectory;
+    public string WorkingDirectory => _repository.Info.WorkingDirectory.TrimEnd('\\', '/');
 
     public TestRepository WriteFile(string relativePath, string content = "")
     {
@@ -59,6 +59,7 @@ public sealed class TestRepository : IDisposable
         {
             throw new ArgumentNullException(nameof(relativePath), $"Project {relativePath} could not be found");
         }
+
         configuration(root);
 
         root.Save();
@@ -102,7 +103,7 @@ public sealed class TestRepository : IDisposable
     public TestRepository Commit(string message = "commit")
     {
         using var repo = new Repository(WorkingDirectory);
-        Commands.Stage(repo, "*");
+        LibGit2Sharp.Commands.Stage(repo, "*");
         repo.Commit(message, _author, _author);
         return this;
     }

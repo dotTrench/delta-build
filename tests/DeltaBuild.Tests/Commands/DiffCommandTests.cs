@@ -11,7 +11,7 @@ using LibGit2Sharp;
 using Spectre.Console.Cli;
 using Spectre.Console.Cli.Testing;
 
-namespace DeltaBuild.Tests;
+namespace DeltaBuild.Tests.Commands;
 
 public sealed class DiffCommandTests : IDisposable
 {

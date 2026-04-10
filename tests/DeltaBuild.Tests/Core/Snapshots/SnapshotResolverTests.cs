@@ -3,7 +3,7 @@ using DeltaBuild.Cli.Core.Git;
 using DeltaBuild.Cli.Core.Snapshots;
 using DeltaBuild.Tests.Utils;
 
-namespace DeltaBuild.Tests;
+namespace DeltaBuild.Tests.Core.Snapshots;
 
 public class SnapshotResolverTests
 {

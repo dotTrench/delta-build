@@ -1,7 +1,7 @@
 using DeltaBuild.Cli.Core.Diff;
 using DeltaBuild.Cli.Core.Snapshots;
 
-namespace DeltaBuild.Tests;
+namespace DeltaBuild.Tests.Core.Diff;
 
 public class DiffCalculatorTests
 {

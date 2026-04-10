@@ -1,7 +1,7 @@
 using DeltaBuild.Cli.Core;
 using DeltaBuild.Tests.Utils;
 
-namespace DeltaBuild.Tests;
+namespace DeltaBuild.Tests.Core;
 
 public sealed class EntrypointDiscoveryTests : IDisposable
 {
