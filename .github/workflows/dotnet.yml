@@ -35,8 +35,9 @@ jobs:
       - name: Build
         run: dotnet build --no-restore
       - name: Test
-        run: dotnet test --no-build --verbosity normal --coverage --coverage-output-format cobertura --coverage-output .
+        run: dotnet test --no-build --verbosity normal --coverage --coverage-output-format cobertura
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: "**/TestResults/**/*.cobertura.xml"
