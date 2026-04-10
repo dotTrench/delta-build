@@ -43,9 +43,5 @@
     <PackageReference Include="Spectre.Console.Cli" Version="0.55.0"/>
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
-    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
-    <EmbedUntrackedSources>true</EmbedUntrackedSources>
-  </PropertyGroup>
 
 </Project>
