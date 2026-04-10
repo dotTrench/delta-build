@@ -76,7 +76,7 @@ public sealed class GitRepository : IGitRepository
             return null;
         }
 
-        var path = result.Stdout.TrimEnd();
+        var path = Path.GetFullPath(result.Stdout.TrimEnd());
 
 
         return new GitRepository(path);
