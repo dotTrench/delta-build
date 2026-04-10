@@ -59,7 +59,7 @@ public static class SnapshotGenerator
         {
             var fullPath = Path.IsPathRooted(path) ? path : Path.GetFullPath(path, projectInstance.Directory);
 
-            if (!fullPath.StartsWith(_worktree.WorkingDirectory))
+            if (!fullPath.StartsWith(_worktree.WorkingDirectory, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
@@ -140,12 +140,12 @@ public static class SnapshotGenerator
                 _inputFiles.TryAdd(path, sha);
             }
 
-            public IReadOnlyDictionary<string, string> GetInputFiles()
+            public ConcurrentDictionary<string, string> GetInputFiles()
             {
                 return _inputFiles;
             }
 
-            public IReadOnlyCollection<string> GetProjectReferences() => _projectReferences;
+            public HashSet<string> GetProjectReferences() => _projectReferences;
 
             public void AddProjectReferences(IEnumerable<string> references)
             {

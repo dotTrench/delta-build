@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 using DeltaBuild.Cli.Core.Git;
 
 using Microsoft.Build.Evaluation;
@@ -66,7 +68,7 @@ public sealed class SnapshotResolver(IGitRepository repository, IEnvironment env
                 case EntrypointDiscoveryResult.NotFound:
                     return new SnapshotResolverResult.NoEntrypointsFound();
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(discovery), discovery, null);
+                    throw new UnreachableException();
             }
         }
 
