@@ -36,8 +36,11 @@ jobs:
 
 ### With snapshot caching
 
-Caches the base snapshot by commit SHA so snapshot generation is skipped on subsequent
+Caches build graph snapshots by commit SHA so snapshot generation is skipped on subsequent
 runs against the same base. Useful for large repositories where snapshot generation is slow.
+
+Pass `--cache` to `diff` — it reads from the cache when a snapshot exists for a commit and
+writes to it after generating a new one, so no separate snapshot step is needed.
 
 ```yaml
 on:
@@ -52,24 +55,21 @@ jobs:
       - name: Install delta-build
         run: dotnet tool install -g delta-build
 
-      - name: Restore base snapshot from cache
-        id: cache
+      - name: Restore snapshot cache
         uses: actions/cache@v5
         with:
-          path: base-snapshot.json
-          key: snapshot-${{ github.event.pull_request.base.sha }}
+          path: .delta-build-cache
+          key: delta-build-snapshots-${{ github.event.pull_request.base.sha }}
+          restore-keys: |
+            delta-build-snapshots-
 
-      - name: Generate base snapshot
-        if: steps.cache.outputs.cache-hit != 'true'
-        continue-on-error: true
-        run: |
-          git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
-          delta-build snapshot --commit ${{ github.event.pull_request.base.sha }} --output base-snapshot.json
+      - name: Fetch base commit
+        run: git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
 
       - name: Find affected projects
         id: diff
         continue-on-error: true
-        run: delta-build diff --base base-snapshot.json --output diff.sln
+        run: delta-build diff --base ${{ github.event.pull_request.base.sha }} --cache .delta-build-cache --output diff.sln
 
       - name: Build affected projects
         if: steps.diff.outcome == 'success'
@@ -111,8 +111,11 @@ steps:
 
 ### With snapshot caching
 
-Caches the base snapshot by target branch SHA so snapshot generation is skipped on subsequent
+Caches build graph snapshots by commit SHA so snapshot generation is skipped on subsequent
 runs against the same base. Useful for large repositories where snapshot generation is slow.
+
+Pass `--cache` to `diff` — it reads from the cache when a snapshot exists for a commit and
+writes to it after generating a new one, so no separate snapshot step is needed.
 
 ```yaml
 # PR pipeline
@@ -130,17 +133,12 @@ steps:
 
   - task: Cache@2
     inputs:
-      key: '"snapshot" | "$(BaseSha)"'
-      path: base-snapshot.json
-      cacheHitVar: SNAPSHOT_CACHE_HIT
-    displayName: Restore base snapshot from cache
+      key: '"delta-build-snapshots" | "$(BaseSha)"'
+      restoreKeys: '"delta-build-snapshots"'
+      path: .delta-build-cache
+    displayName: Restore snapshot cache
 
-  - script: delta-build snapshot --commit $(BaseSha) --output base-snapshot.json
-    condition: ne(variables.SNAPSHOT_CACHE_HIT, 'true')
-    continueOnError: true
-    displayName: Generate base snapshot
-
-  - script: delta-build diff --base base-snapshot.json --output diff.sln
+  - script: delta-build diff --base $(BaseSha) --cache .delta-build-cache --output diff.sln
     displayName: Find affected projects
     continueOnError: true
     name: diff

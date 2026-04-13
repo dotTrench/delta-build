@@ -77,6 +77,7 @@ delta-build diff --base snapshot.json
 | `--format <format>`          | Output format: `plain`, `json`, `sln`, `slnx`                                                                         | `plain`       |
 | `--output <path>`            | Write output to file                                                                                                  | stdout        |
 | `--exit-code-on-empty`       | Exit code to return when no projects are outputted                                                                    | `0`           |
+| `--cache <path>`             | Directory to cache build graph snapshots in. Cached snapshots are reused across runs to avoid redundant worktree builds for commits already seen. |               |
 
 ### `snapshot` - Save a build graph snapshot
 
@@ -100,6 +101,7 @@ delta-build snapshot --commit v1.0 > snapshot.json
 | `-e, --entrypoint <path>` | Solution or project file(s) to analyze           | Auto-discover |
 | `-o, --output <path>`     | Write output to file                             | stdout        |
 | `--overwrite`             | Overwrite the --output file if it already exists | `false`       |
+| `--cache <path>`          | Directory to cache build graph snapshots in. Returns the cached snapshot for the target commit if available, and stores newly generated snapshots for future reuse. |               |
 
 ## Piping
 
