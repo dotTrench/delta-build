@@ -2,6 +2,7 @@ using DeltaBuild.Cli;
 using DeltaBuild.Cli.Commands;
 using DeltaBuild.Cli.Core;
 using DeltaBuild.Cli.Core.Snapshots;
+using DeltaBuild.Cli.Core.Snapshots.Cache;
 using DeltaBuild.Tests.Utils;
 using DeltaBuild.TestUtils;
 
@@ -237,6 +238,71 @@ public class SnapshotCommandTests
         await Assert.That(result.ExitCode).IsEqualTo(0);
 
         await VerifyJson(stdout.GetString());
+    }
+
+    [Test]
+    public async Task ReturnsExitCode1_WhenInvalidCacheSpecified(CancellationToken cancellationToken)
+    {
+        using var repo = TestRepository.Create();
+        repo.CreateCsproj("src/Core/Core.csproj").Commit("Initial commit");
+
+        var result = await BuildApp(repo).RunAsync(
+            ["snapshot", "--cache", "https://invalid"],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task ReturnsCachedSnapshot_WhenCacheHit(CancellationToken cancellationToken)
+    {
+        using var repo = TestRepository.Create();
+        repo.CreateCsproj("src/Core/Core.csproj").Commit("Initial commit");
+
+        var sha = repo.GetCurrentCommit();
+        var cacheDir = Directory.CreateTempSubdirectory("delta-build-cache-tests");
+        try
+        {
+            var cachedSnapshot = new Snapshot { Commit = "from-cache", Projects = [] };
+            await new LocalSnapshotCache(cacheDir).SetAsync(sha, cachedSnapshot, cancellationToken);
+
+            var stdout = new InMemoryStandardOutput();
+            var result = await BuildApp(repo, stdout).RunAsync(
+                ["snapshot", "--cache", cacheDir.FullName],
+                cancellationToken);
+
+            await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Output);
+            var snapshot = SnapshotSerializer.Deserialize(stdout.GetBytes());
+            await Assert.That(snapshot.Commit).IsEqualTo("from-cache");
+        }
+        finally
+        {
+            cacheDir.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task StoresSnapshotInCache_AfterGeneration(CancellationToken cancellationToken)
+    {
+        using var repo = TestRepository.Create();
+        repo.CreateCsproj("src/Core/Core.csproj").Commit("Initial commit");
+
+        var sha = repo.GetCurrentCommit();
+        var cacheDir = Directory.CreateTempSubdirectory("delta-build-cache-tests");
+        try
+        {
+            var result = await BuildApp(repo).RunAsync(
+                ["snapshot", "--cache", cacheDir.FullName],
+                cancellationToken);
+
+            await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Output);
+            var cached = await new LocalSnapshotCache(cacheDir).GetAsync(sha, cancellationToken);
+            await Assert.That(cached).IsNotNull();
+        }
+        finally
+        {
+            cacheDir.Delete(recursive: true);
+        }
     }
 
     private static CommandAppTester BuildApp(string workingDirectory, InMemoryStandardOutput? stdout = null)

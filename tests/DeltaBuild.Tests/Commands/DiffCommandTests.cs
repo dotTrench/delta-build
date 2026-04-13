@@ -4,6 +4,8 @@ using DeltaBuild.Cli.Commands;
 using DeltaBuild.Cli.Core;
 using DeltaBuild.Cli.Core.Diff;
 using DeltaBuild.Cli.Core.Diff.Formatting;
+using DeltaBuild.Cli.Core.Snapshots;
+using DeltaBuild.Cli.Core.Snapshots.Cache;
 using DeltaBuild.Tests.Utils;
 
 using LibGit2Sharp;
@@ -442,6 +444,88 @@ public sealed class DiffCommandTests : IDisposable
 
         var app = await Assert.That(projects).HasSingleItem(p => p.Path == "src/App/App.csproj");
         await Assert.That(app.State).IsEqualTo(ProjectState.Affected);
+    }
+
+    [Test]
+    public async Task ReturnsExitCode1_WhenInvalidCacheSpecified(CancellationToken cancellationToken)
+    {
+        _repo.CreateCsproj("src/Core/Core.csproj").Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        await _repo.WriteFileAsync("src/Core/Foo.cs", "public class Foo {}", cancellationToken);
+        _repo.Commit("Add Foo");
+
+        var result = await BuildApp().RunAsync(
+            ["diff", "--base", baseCommit, "--cache", "https://invalid"],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task UsesCachedSnapshot_WhenCacheHit(CancellationToken cancellationToken)
+    {
+        // Pre-populate the cache for the base commit with an empty snapshot (no projects).
+        // On a real diff both snapshots would have Core.csproj with identical hashes → no output.
+        // With the empty cached base, Core.csproj only exists in head → shows as Added.
+        // That observable difference proves the cached snapshot was used.
+        _repo.CreateCsproj("src/Core/Core.csproj").Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        await _repo.WriteFileAsync("unrelated.txt", "hello", cancellationToken);
+        _repo.Commit("Unrelated change");
+
+        var cacheDir = Directory.CreateTempSubdirectory("delta-build-cache-tests");
+        try
+        {
+            var emptySnapshot = new Snapshot { Commit = baseCommit, Projects = [] };
+            await new LocalSnapshotCache(cacheDir).SetAsync(baseCommit, emptySnapshot, cancellationToken);
+
+            var stdout = new InMemoryStandardOutput();
+            var result = await BuildApp(stdout).RunAsync(
+                ["diff", "--base", baseCommit, "--cache", cacheDir.FullName],
+                cancellationToken);
+
+            await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Output);
+            var line = await Assert.That(stdout.GetLines()).HasSingleItem();
+            await Assert.That(line).IsEqualTo("src/Core/Core.csproj");
+        }
+        finally
+        {
+            cacheDir.Delete(recursive: true);
+        }
+    }
+
+    [Test]
+    public async Task PopulatesCache_AfterDiff(CancellationToken cancellationToken)
+    {
+        _repo.CreateCsproj("src/Core/Core.csproj").Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        await _repo.WriteFileAsync("src/Core/Foo.cs", "public class Foo {}", cancellationToken);
+        _repo.Commit("Add Foo");
+
+        var headCommit = _repo.GetCurrentCommit();
+
+        var cacheDir = Directory.CreateTempSubdirectory("delta-build-cache-tests");
+        try
+        {
+            var result = await BuildApp().RunAsync(
+                ["diff", "--base", baseCommit, "--cache", cacheDir.FullName],
+                cancellationToken);
+
+            await Assert.That(result.ExitCode).IsEqualTo(0).Because(result.Output);
+            var cache = new LocalSnapshotCache(cacheDir);
+            await Assert.That(await cache.GetAsync(baseCommit, cancellationToken)).IsNotNull();
+            await Assert.That(await cache.GetAsync(headCommit, cancellationToken)).IsNotNull();
+        }
+        finally
+        {
+            cacheDir.Delete(recursive: true);
+        }
     }
 
     [Test]
