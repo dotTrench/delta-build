@@ -1,13 +1,19 @@
 using System.Diagnostics;
 
 using DeltaBuild.Cli.Core.Git;
+using DeltaBuild.Cli.Core.Snapshots.Cache;
 
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Graph;
 
 namespace DeltaBuild.Cli.Core.Snapshots;
 
-public sealed class SnapshotResolver(IGitRepository repository, IEnvironment environment, IStandardInput stdin)
+public sealed class SnapshotResolver(
+    IGitRepository repository,
+    IEnvironment environment,
+    IStandardInput stdin,
+    ISnapshotCache? cache
+)
 {
     public async Task<SnapshotResolverResult> ResolveAsync(
         string value,
@@ -35,6 +41,15 @@ public sealed class SnapshotResolver(IGitRepository repository, IEnvironment env
         if (sha is null)
             return new SnapshotResolverResult.CommitNotFound(value);
 
+        if (cache is not null)
+        {
+            var cached = await cache.GetAsync(sha, cancellationToken);
+
+            if (cached is not null)
+            {
+                return new SnapshotResolverResult.Success(cached);
+            }
+        }
         var relativeWorkingDirectory = Path.GetRelativePath(repository.WorkingDirectory, environment.WorkingDirectory);
 
         await using var worktree = await repository.CreateWorktreeAsync(sha, cancellationToken);
@@ -76,6 +91,10 @@ public sealed class SnapshotResolver(IGitRepository repository, IEnvironment env
         var graph = new ProjectGraph(resolvedEntrypoints, projectCollection);
 
         var snapshot = await SnapshotGenerator.GenerateSnapshot(graph, worktree, cancellationToken);
+        if (cache is not null)
+        {
+            await cache.SetAsync(sha, snapshot, cancellationToken);
+        }
         return new SnapshotResolverResult.Success(snapshot);
     }
 }

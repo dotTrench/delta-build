@@ -60,23 +60,24 @@ delta-build diff --base snapshot.json
 
 ## Options
 
-| Flag                         | Description                                                                                                           | Default       |
-|------------------------------|-----------------------------------------------------------------------------------------------------------------------|---------------|
-| `--base <ref>`               | Commit, branch, tag, or snapshot file to compare against (use - to read from stdin)                                   | Required      |
-| `--head <ref>`               | Commit, branch, tag, or snapshot file to compare to, (use - to read from stdin)                                       | `HEAD`        |
-| `-e, --entrypoint <path>`    | Solution or project file(s) to analyze                                                                                | Auto-discover |
-| `--include-affected`         | Include projects depending on changed code                                                                            | `true`        |
-| `--include-modified`         | Include projects with direct file changes                                                                             | `true`        |
-| `--include-added`            | Include new projects                                                                                                  | `true`        |
-| `--include-removed`          | Include deleted projects                                                                                              | `false`       |
-| `--include-unchanged`        | Include unchanged projects                                                                                            | `false`       |
-| `--ignore <pattern>`         | Exclude files matching a glob pattern from the diff. Repeatable.                                                      |               |
-| `--ignore-project <pattern>` | Exclude projects matching a glob pattern. Treated as unchanged and won't cause dependents to be affected. Repeatable. |               |
-| `--explain`                  | Render a colored tree view to stderr                                                                                  | `false`       |
-| `--detailed`                 | When combined with --explain prints more detailed view of diff to stderr                                              | `false`       |
-| `--format <format>`          | Output format: `plain`, `json`, `sln`, `slnx`                                                                         | `plain`       |
-| `--output <path>`            | Write output to file                                                                                                  | stdout        |
-| `--exit-code-on-empty`       | Exit code to return when no projects are outputted                                                                    | `0`           |
+| Flag                         | Description                                                                                                                                       | Default       |
+|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|---------------|
+| `--base <ref>`               | Commit, branch, tag, or snapshot file to compare against (use - to read from stdin)                                                               | Required      |
+| `--head <ref>`               | Commit, branch, tag, or snapshot file to compare to, (use - to read from stdin)                                                                   | `HEAD`        |
+| `-e, --entrypoint <path>`    | Solution or project file(s) to analyze                                                                                                            | Auto-discover |
+| `--include-affected`         | Include projects depending on changed code                                                                                                        | `true`        |
+| `--include-modified`         | Include projects with direct file changes                                                                                                         | `true`        |
+| `--include-added`            | Include new projects                                                                                                                              | `true`        |
+| `--include-removed`          | Include deleted projects                                                                                                                          | `false`       |
+| `--include-unchanged`        | Include unchanged projects                                                                                                                        | `false`       |
+| `--ignore <pattern>`         | Exclude files matching a glob pattern from the diff. Repeatable.                                                                                  |               |
+| `--ignore-project <pattern>` | Exclude projects matching a glob pattern. Treated as unchanged and won't cause dependents to be affected. Repeatable.                             |               |
+| `--explain`                  | Render a colored tree view to stderr                                                                                                              | `false`       |
+| `--detailed`                 | When combined with --explain prints more detailed view of diff to stderr                                                                          | `false`       |
+| `--format <format>`          | Output format: `plain`, `json`, `sln`, `slnx`                                                                                                     | `plain`       |
+| `--output <path>`            | Write output to file                                                                                                                              | stdout        |
+| `--exit-code-on-empty`       | Exit code to return when no projects are outputted                                                                                                | `0`           |
+| `--cache <path>`             | Directory to cache build graph snapshots in. Cached snapshots are reused across runs to avoid redundant worktree builds for commits already seen. |               |
 
 ### `snapshot` - Save a build graph snapshot
 
@@ -94,12 +95,13 @@ delta-build snapshot --commit v1.0 > snapshot.json
 
 #### Snapshot Options
 
-| Flag                      | Description                                      | Default       |
-|---------------------------|--------------------------------------------------|---------------|
-| `--commit <ref>`          | Commit, branch, or tag to snapshot               | `HEAD`        |
-| `-e, --entrypoint <path>` | Solution or project file(s) to analyze           | Auto-discover |
-| `-o, --output <path>`     | Write output to file                             | stdout        |
-| `--overwrite`             | Overwrite the --output file if it already exists | `false`       |
+| Flag                      | Description                                                                                                                                                         | Default       |
+|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------|
+| `--commit <ref>`          | Commit, branch, or tag to snapshot                                                                                                                                  | `HEAD`        |
+| `-e, --entrypoint <path>` | Solution or project file(s) to analyze                                                                                                                              | Auto-discover |
+| `-o, --output <path>`     | Write output to file                                                                                                                                                | stdout        |
+| `--overwrite`             | Overwrite the --output file if it already exists                                                                                                                    | `false`       |
+| `--cache <path>`          | Directory to cache build graph snapshots in. Returns the cached snapshot for the target commit if available, and stores newly generated snapshots for future reuse. |               |
 
 ## Piping
 

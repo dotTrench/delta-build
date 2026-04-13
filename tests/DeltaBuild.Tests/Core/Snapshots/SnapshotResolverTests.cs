@@ -1,6 +1,7 @@
 using DeltaBuild.Cli.Core;
 using DeltaBuild.Cli.Core.Git;
 using DeltaBuild.Cli.Core.Snapshots;
+using DeltaBuild.Cli.Core.Snapshots.Cache;
 using DeltaBuild.Tests.Utils;
 
 namespace DeltaBuild.Tests.Core.Snapshots;
@@ -32,7 +33,9 @@ public class SnapshotResolverTests
         var resolver = new SnapshotResolver(
             new GitRepository(Directory.GetCurrentDirectory()),
             new TestEnvironment(Directory.GetCurrentDirectory()),
-            new StreamStandardInput(stream));
+            new StreamStandardInput(stream),
+            null
+        );
 
         var result = await resolver.ResolveAsync("-", [], cancellationToken);
 
@@ -52,7 +55,9 @@ public class SnapshotResolverTests
             var resolver = new SnapshotResolver(
                 new GitRepository(Directory.GetCurrentDirectory()),
                 new TestEnvironment(Directory.GetCurrentDirectory()),
-                new NullStandardInput());
+                new NullStandardInput(),
+                null
+            );
 
             var result = await resolver.ResolveAsync(file, [], cancellationToken);
 
@@ -78,7 +83,9 @@ public class SnapshotResolverTests
         var resolver = new SnapshotResolver(
             gitRepo,
             new TestEnvironment(repo.WorkingDirectory),
-            new NullStandardInput());
+            new NullStandardInput(),
+            null
+        );
 
         var result = await resolver.ResolveAsync(
             repo.GetCurrentCommit(),
@@ -101,7 +108,9 @@ public class SnapshotResolverTests
         var resolver = new SnapshotResolver(
             gitRepo,
             new TestEnvironment(repo.WorkingDirectory),
-            new NullStandardInput());
+            new NullStandardInput(),
+            null
+        );
 
         var result = await resolver.ResolveAsync(repo.GetCurrentCommit(), [], cancellationToken);
 
@@ -120,10 +129,80 @@ public class SnapshotResolverTests
         var resolver = new SnapshotResolver(
             gitRepo,
             new TestEnvironment(repo.WorkingDirectory),
-            new NullStandardInput());
+            new NullStandardInput(),
+            null
+        );
 
         var result = await resolver.ResolveAsync(repo.GetCurrentCommit(), [], cancellationToken);
 
         await Assert.That(result).IsTypeOf<SnapshotResolverResult.NoEntrypointsFound>();
+    }
+
+    [Test]
+    public async Task Success_ReturnsCachedSnapshot_WhenCacheHit(CancellationToken cancellationToken)
+    {
+        using var repo = TestRepository.Create();
+        repo.CreateCsproj("src/Core/Core.csproj").Commit("initial");
+
+        var sha = repo.GetCurrentCommit();
+        var cached = new Snapshot { Commit = "from-cache", Projects = [] };
+        var cache = new InMemorySnapshotCache();
+        await cache.SetAsync(sha, cached, cancellationToken);
+
+        var gitRepo = await GitRepository.DiscoverAsync(repo.WorkingDirectory, cancellationToken)
+                      ?? throw new InvalidOperationException();
+        var resolver = new SnapshotResolver(
+            gitRepo,
+            new TestEnvironment(repo.WorkingDirectory),
+            new NullStandardInput(),
+            cache
+        );
+
+        var result = await resolver.ResolveAsync(sha, [], cancellationToken);
+
+        var success = await Assert.That(result).IsTypeOf<SnapshotResolverResult.Success>();
+        await Assert.That(success!.Snapshot.Commit).IsEqualTo("from-cache");
+    }
+
+    [Test]
+    public async Task PopulatesCache_AfterResolvingCommit(CancellationToken cancellationToken)
+    {
+        using var repo = TestRepository.Create();
+        repo.CreateCsproj("src/Core/Core.csproj").Commit("initial");
+
+        var sha = repo.GetCurrentCommit();
+        var cache = new InMemorySnapshotCache();
+
+        var gitRepo = await GitRepository.DiscoverAsync(repo.WorkingDirectory, cancellationToken)
+                      ?? throw new InvalidOperationException();
+        var resolver = new SnapshotResolver(
+            gitRepo,
+            new TestEnvironment(repo.WorkingDirectory),
+            new NullStandardInput(),
+            cache
+        );
+
+        var result = await resolver.ResolveAsync(sha, [], cancellationToken);
+
+        await Assert.That(result).IsTypeOf<SnapshotResolverResult.Success>();
+        var cachedEntry = await cache.GetAsync(sha, cancellationToken);
+        await Assert.That(cachedEntry).IsNotNull();
+    }
+
+    private sealed class InMemorySnapshotCache : ISnapshotCache
+    {
+        private readonly Dictionary<string, Snapshot> _store = new();
+
+        public Task SetAsync(string sha, Snapshot data, CancellationToken cancellationToken = default)
+        {
+            _store[sha] = data;
+            return Task.CompletedTask;
+        }
+
+        public Task<Snapshot?> GetAsync(string sha, CancellationToken cancellationToken = default)
+        {
+            _store.TryGetValue(sha, out var snapshot);
+            return Task.FromResult(snapshot);
+        }
     }
 }

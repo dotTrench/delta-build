@@ -3,6 +3,7 @@ using System.ComponentModel;
 using DeltaBuild.Cli.Core;
 using DeltaBuild.Cli.Core.Git;
 using DeltaBuild.Cli.Core.Snapshots;
+using DeltaBuild.Cli.Core.Snapshots.Cache;
 
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Graph;
@@ -36,6 +37,10 @@ public sealed class SnapshotCommand : AsyncCommand<SnapshotCommand.Settings>
         [Description("Overwrite the --output file if it already exists.")]
         [DefaultValue(false)]
         public bool Overwrite { get; init; }
+
+        [CommandOption("--cache")]
+        [Description("Directory to cache build graph snapshots in. Returns the cached snapshot for the target commit if available, and stores newly generated snapshots for future reuse.")]
+        public string? Cache { get; init; }
 
 
         public override ValidationResult Validate()
@@ -79,6 +84,29 @@ public sealed class SnapshotCommand : AsyncCommand<SnapshotCommand.Settings>
         {
             _console.MarkupLineInterpolated($"[red]Unable to find commit '{settings.Commit}'[/]");
             return 1;
+        }
+
+        ISnapshotCache? cache;
+        if (settings.Cache is not null)
+        {
+            if (!SnapshotCacheFactory.TryCreateCache(settings.Cache, out cache))
+            {
+                _console.MarkupLineInterpolated($"[red]Invalid cache '{settings.Cache}' specified[/]");
+                return 1;
+            }
+
+            var cached = await cache.GetAsync(sha, cancellationToken);
+            if (cached is not null)
+            {
+                _console.MarkupLineInterpolated($"[green]Found cached entry for {sha}[/]");
+                await using var o = settings.Output?.Create() ?? _stdout.OpenStream();
+                await SnapshotSerializer.SerializeAsync(o, cached, cancellationToken);
+                return 0;
+            }
+        }
+        else
+        {
+            cache = null;
         }
 
         var isShallow = await repo.IsShallowRepositoryAsync(cancellationToken);
@@ -156,6 +184,11 @@ public sealed class SnapshotCommand : AsyncCommand<SnapshotCommand.Settings>
         var graph = new ProjectGraph(entrypoints, projectCollection);
 
         var snapshot = await SnapshotGenerator.GenerateSnapshot(graph, worktree, cancellationToken);
+        if (cache is not null)
+        {
+            _console.MarkupLineInterpolated($"[green] Storing '{sha}' snapshot in cache [/]");
+            await cache.SetAsync(sha, snapshot, cancellationToken);
+        }
 
         await using var output = settings.Output?.Create() ?? _stdout.OpenStream();
         await SnapshotSerializer.SerializeAsync(output, snapshot, cancellationToken);

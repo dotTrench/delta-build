@@ -6,6 +6,7 @@ using DeltaBuild.Cli.Core.Diff;
 using DeltaBuild.Cli.Core.Diff.Formatting;
 using DeltaBuild.Cli.Core.Git;
 using DeltaBuild.Cli.Core.Snapshots;
+using DeltaBuild.Cli.Core.Snapshots.Cache;
 
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -119,6 +120,11 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
         [DefaultValue(0)]
         public int ExitCodeOnEmpty { get; init; } = 0;
 
+
+        [CommandOption("--cache")]
+        [Description("Directory to cache build graph snapshots in. Cached snapshots are reused across runs to avoid redundant worktree builds for commits already seen.")]
+        public string? Cache { get; init; }
+
         public enum OutputFormat
         {
             Plain,
@@ -193,7 +199,20 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
             }
         }
 
-        var resolver = new SnapshotResolver(repo, _environment, _stdin);
+        ISnapshotCache? cache;
+        if (settings.Cache is not null)
+        {
+            if (!SnapshotCacheFactory.TryCreateCache(settings.Cache, out cache))
+            {
+                _console.MarkupLineInterpolated($"[red]Invalid cache '{settings.Cache}' specified[/]");
+                return 1;
+            }
+        }
+        else
+        {
+            cache = null;
+        }
+        var resolver = new SnapshotResolver(repo, _environment, _stdin, cache);
 
 
         var headSnapshot = await ResolveSnapshotAsync(

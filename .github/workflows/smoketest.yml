@@ -55,77 +55,16 @@ jobs:
       - name: Install delta-build
         run: ./eng/install-local.sh 0.0.0-${GITHUB_SHA::7}
 
-      - name: Restore base snapshot from cache
-        id: cache
+      - name: Restore snapshot cache
         uses: actions/cache@v5
         with:
-          path: base-snapshot.json
-          key: snapshot-${{ github.event.pull_request.base.sha }}
+          path: .delta-build-cache
+          key: delta-build-snapshots-${{ github.event.pull_request.base.sha }}
+          restore-keys: |
+            delta-build-snapshots-
 
       - name: Fetch base commit
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
-          delta-build snapshot --commit ${{ github.event.pull_request.base.sha }} --output base-snapshot.json
-
-      - name: Diff
-        run: delta-build diff --base base-snapshot.json --explain --detailed
-
-  generate-base-snapshot:
-    runs-on: ubuntu-latest
-    concurrency:
-      group: snapshot-${{ github.event.pull_request.base.sha }}
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: 10.0.x
-
-      - name: Install delta-build
-        run: ./eng/install-local.sh 0.0.0-${GITHUB_SHA::7}
-
-      - name: Restore base snapshot from cache
-        id: cache
-        uses: actions/cache@v5
-        with:
-          path: base-snapshot.json
-          key: base-snapshot-${{ github.event.pull_request.base.sha }}
-
-      - name: Fetch base commit
-        if: steps.cache.outputs.cache-hit != 'true'
         run: git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
 
-      - name: Generate base snapshot
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: delta-build snapshot --commit ${{ github.event.pull_request.base.sha }} --output base-snapshot.json
-
-      - name: Upload base snapshot
-        uses: actions/upload-artifact@v7
-        with:
-          name: base-snapshot-${{ github.event.pull_request.base.sha }}
-          path: base-snapshot.json
-
-  diff-snapshot-cached:
-    runs-on: ubuntu-latest
-    needs: generate-base-snapshot
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: 10.0.x
-
-      - name: Install delta-build
-        run: ./eng/install-local.sh 0.0.0-${GITHUB_SHA::7}
-
-      - name: Download base snapshot
-        uses: actions/download-artifact@v8
-        with:
-          name: base-snapshot-${{ github.event.pull_request.base.sha }}
-
       - name: Diff
-        run: delta-build diff --base base-snapshot.json --explain --detailed
+        run: delta-build diff --base ${{ github.event.pull_request.base.sha }} --cache .delta-build-cache --explain --detailed
