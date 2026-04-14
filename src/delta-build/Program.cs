@@ -43,4 +43,4 @@ app.Configure(c =>
 });
 
 
-await app.RunAsync(args);
+return await app.RunAsync(args);
