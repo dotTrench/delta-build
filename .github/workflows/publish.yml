@@ -5,6 +5,9 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: read
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -22,7 +25,7 @@ jobs:
         run: dotnet restore
 
       - name: Build
-        run: dotnet build -c Release --no-restore
+        run: dotnet build -c Release --no-restore /p:Version=${GITHUB_REF_NAME#v} /p:ContinuousIntegrationBuild=true /p:EmbedUntrackedSources=true
 
       - name: Run tests
         run: dotnet test -c Release --no-build
