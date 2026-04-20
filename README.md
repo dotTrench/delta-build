@@ -1,5 +1,7 @@
 # delta-build
 
+[![NuGet](https://img.shields.io/nuget/v/delta-build.svg)](https://www.nuget.org/packages/delta-build)
+
 delta-build analyzes your .NET build graph and git history to determine exactly which projects need to be rebuilt,
 
 Inspired by [dotnet-affected](https://github.com/leonardochaia/dotnet-affected).
