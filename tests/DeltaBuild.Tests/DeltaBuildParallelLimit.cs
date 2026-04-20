@@ -4,5 +4,5 @@ namespace DeltaBuild.Tests;
 
 public class DeltaBuildParallelLimit : IParallelLimit
 {
-    public int Limit => Environment.ProcessorCount;
+    public int Limit => Environment.ProcessorCount / 2;
 }

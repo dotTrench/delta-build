@@ -111,7 +111,7 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
         )]
         public OutputFormat? Format { get; init; }
 
-        [CommandOption("--microsoft-build-traversal-version")]
+        [CommandOption("--traversal-version")]
         [Description("Version of the Microsoft.Build.Traversal SDK to use in the generated traversal project file. Only applies when using traversal format.")]
         public string? MicrosoftBuildTraversalVersion { get; init; }
 
