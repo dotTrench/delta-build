@@ -50,7 +50,13 @@ delta-build diff --base main --format json --include-dependencies
 
 ```json
 [
-  { "path": "src/Lib/Lib.csproj", "state": "Dependency" },
-  { "path": "src/App/App.csproj", "state": "Modified" }
+  {
+    "path": "src/Lib/Lib.csproj",
+    "state": "Dependency"
+  },
+  {
+    "path": "src/App/App.csproj",
+    "state": "Modified"
+  }
 ]
 ```

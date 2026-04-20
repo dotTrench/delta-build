@@ -9,7 +9,8 @@ Inspired by [dotnet-affected](https://github.com/leonardochaia/dotnet-affected).
 - [CI Integration](docs/ci-integration.md) — GitHub Actions and Azure DevOps examples
 - [Shallow Clones](docs/shallow-clones.md) — handling shallow git clones in CI
 - [NuGet Package Tracking](docs/nuget-package-tracking.md) — fine-grained package change detection with lock files
-- [Solution File Configuration](docs/solution-file-configuration.md) — ensuring correct build configuration propagates to dependencies
+- [Solution File Configuration](docs/solution-file-configuration.md) — ensuring correct build configuration propagates
+  to dependencies
 
 ## How it works
 
