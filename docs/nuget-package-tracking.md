@@ -3,6 +3,7 @@
 By default, delta-build tracks changes to `Directory.Packages.props` as an input file
 for all projects that import it. This means any change to the file — even bumping a
 package version that only one project uses — will mark every project as affected.
+
 ## Fine-grained tracking with NuGet lock files
 
 NuGet lock files (`packages.lock.json`) give you project-scoped package change detection
@@ -14,8 +15,9 @@ resolved package graph actually changes.
 Enable lock files for your projects (either in `Directory.Build.props` or per-project):
 
 ```xml
+
 <PropertyGroup>
-  <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
 </PropertyGroup>
 ```
 

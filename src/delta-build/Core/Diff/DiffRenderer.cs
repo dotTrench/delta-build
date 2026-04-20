@@ -49,8 +49,9 @@ public static class DiffRenderer
             ProjectState.Removed or ProjectState.Added => 0,
             ProjectState.Modified => 1,
             ProjectState.Affected => 2,
-            ProjectState.Unchanged => 3,
-            _ => 4
+            ProjectState.Dependency => 3,
+            ProjectState.Unchanged => 4,
+            _ => 5
         };
     }
 
@@ -61,6 +62,7 @@ public static class DiffRenderer
         ProjectState.Removed => new Style(Color.Red),
         ProjectState.Modified => new Style(Color.Yellow),
         ProjectState.Affected => new Style(Color.Orange1),
+        ProjectState.Dependency => new Style(Color.Blue),
         ProjectState.Unchanged => new Style(Color.Grey, decoration: Decoration.Dim),
         _ => throw new UnreachableException()
     };

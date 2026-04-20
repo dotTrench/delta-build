@@ -11,6 +11,7 @@
     <File Path="docs\ci-integration.md" />
     <File Path="docs\nuget-package-tracking.md" />
     <File Path="docs\shallow-clones.md" />
+    <File Path="docs\solution-file-configuration.md" />
   </Folder>
   <Folder Name="/eng/">
     <File Path="eng\install-local.ps1" />

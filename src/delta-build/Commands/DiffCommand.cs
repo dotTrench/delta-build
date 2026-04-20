@@ -66,6 +66,14 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
         [Description("Include projects with an upstream dependency that was modified or added.")]
         public bool IncludeAffected { get; init; } = true;
 
+        [CommandOption("--include-dependencies")]
+        [DefaultValue(false)]
+        [Description(
+            "For each included project, also include all of its transitive project dependencies, even if they are unchanged. " +
+            "Useful when building with solution files, where dotnet does not propagate the build configuration to dependencies."
+        )]
+        public bool IncludeDependencies { get; init; }
+
         [CommandOption("--ignore <pattern>")]
         [Description(
             "Glob pattern for files to exclude from the diff. " +
@@ -240,11 +248,12 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
 
         var ignore = settings.Ignore.Length > 0 ? new GlobMatcher(settings.Ignore) : null;
         var ignoreProject = settings.IgnoreProject.Length > 0 ? new GlobMatcher(settings.IgnoreProject) : null;
-        var diff = DiffCalculator.Calculate(baseSnapshot, headSnapshot, ignore, ignoreProject);
+        var diff = DiffCalculator.Calculate(baseSnapshot, headSnapshot, ignore, ignoreProject, settings.IncludeDependencies);
 
         var outputProjects = diff.Projects
             .Where(it => ShouldInclude(it, settings))
             .ToList();
+
         await using (var output = settings.Output?.Create() ?? _stdout.OpenStream())
         {
             await formatter.FormatAsync(outputProjects, output, cancellationToken);
@@ -318,6 +327,7 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
             ProjectState.Modified when settings.IncludeModified => true,
             ProjectState.Removed when settings.IncludeRemoved => true,
             ProjectState.Unchanged when settings.IncludeUnchanged => true,
+            ProjectState.Dependency => true,
             _ => false
         };
     }

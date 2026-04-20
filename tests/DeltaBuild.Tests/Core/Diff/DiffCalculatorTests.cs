@@ -412,6 +412,112 @@ public class DiffCalculatorTests
     }
 
     [Test]
+    public async Task Dependency_WhenDirectDependencyIsNonUnchanged()
+    {
+        var @base = BuildSnapshot("abc",
+            new()
+            {
+                ["src/Lib/Lib.csproj"] = (new() { ["src/Lib/Lib.csproj"] = "hash1" }, []),
+                ["src/App/App.csproj"] = (new() { ["src/App/App.csproj"] = "hash2" }, ["src/Lib/Lib.csproj"])
+            });
+
+        var head = BuildSnapshot("def",
+            new()
+            {
+                ["src/Lib/Lib.csproj"] = (new() { ["src/Lib/Lib.csproj"] = "hash1" }, []),
+                ["src/App/App.csproj"] = (new() { ["src/App/App.csproj"] = "hash3" }, ["src/Lib/Lib.csproj"]) // changed
+            });
+
+        var result = DiffCalculator.Calculate(@base, head, includeDependencies: true);
+
+        var app = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/App/App.csproj");
+        await Assert.That(app.State).IsEqualTo(ProjectState.Modified);
+
+        var lib = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/Lib/Lib.csproj");
+        await Assert.That(lib.State).IsEqualTo(ProjectState.Dependency);
+    }
+
+    [Test]
+    public async Task Dependency_WhenTransitiveDependency()
+    {
+        var @base = BuildSnapshot("abc",
+            new()
+            {
+                ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1" }, []),
+                ["src/Lib/Lib.csproj"] = (new() { ["src/Lib/Lib.csproj"] = "hash2" }, ["src/Core/Core.csproj"]),
+                ["src/App/App.csproj"] = (new() { ["src/App/App.csproj"] = "hash3" }, ["src/Lib/Lib.csproj"])
+            });
+
+        var head = BuildSnapshot("def",
+            new()
+            {
+                ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1" }, []),
+                ["src/Lib/Lib.csproj"] = (new() { ["src/Lib/Lib.csproj"] = "hash2" }, ["src/Core/Core.csproj"]),
+                ["src/App/App.csproj"] = (new() { ["src/App/App.csproj"] = "hash4" }, ["src/Lib/Lib.csproj"]) // changed
+            });
+
+        var result = DiffCalculator.Calculate(@base, head, includeDependencies: true);
+
+        var app = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/App/App.csproj");
+        await Assert.That(app.State).IsEqualTo(ProjectState.Modified);
+
+        var lib = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/Lib/Lib.csproj");
+        await Assert.That(lib.State).IsEqualTo(ProjectState.Dependency);
+
+        var core = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/Core/Core.csproj");
+        await Assert.That(core.State).IsEqualTo(ProjectState.Dependency);
+    }
+
+    [Test]
+    public async Task Dependency_DoesNotDowngrade_WhenDependencyAlreadyNonUnchanged()
+    {
+        var @base = BuildSnapshot("abc",
+            new()
+            {
+                ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash1" }, []),
+                ["src/App/App.csproj"] = (new() { ["src/App/App.csproj"] = "hash2" }, ["src/Core/Core.csproj"])
+            });
+
+        var head = BuildSnapshot("def",
+            new()
+            {
+                ["src/Core/Core.csproj"] = (new() { ["src/Core/Core.csproj"] = "hash3" }, []), // changed
+                ["src/App/App.csproj"] = (new() { ["src/App/App.csproj"] = "hash4" }, ["src/Core/Core.csproj"]) // changed
+            });
+
+        var result = DiffCalculator.Calculate(@base, head, includeDependencies: true);
+
+        var app = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/App/App.csproj");
+        await Assert.That(app.State).IsEqualTo(ProjectState.Modified);
+
+        var core = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/Core/Core.csproj");
+        await Assert.That(core.State).IsEqualTo(ProjectState.Modified);
+    }
+
+    [Test]
+    public async Task Dependency_NotSet_WhenIncludeDependenciesIsFalse()
+    {
+        var @base = BuildSnapshot("abc",
+            new()
+            {
+                ["src/Lib/Lib.csproj"] = (new() { ["src/Lib/Lib.csproj"] = "hash1" }, []),
+                ["src/App/App.csproj"] = (new() { ["src/App/App.csproj"] = "hash2" }, ["src/Lib/Lib.csproj"])
+            });
+
+        var head = BuildSnapshot("def",
+            new()
+            {
+                ["src/Lib/Lib.csproj"] = (new() { ["src/Lib/Lib.csproj"] = "hash1" }, []),
+                ["src/App/App.csproj"] = (new() { ["src/App/App.csproj"] = "hash3" }, ["src/Lib/Lib.csproj"]) // changed
+            });
+
+        var result = DiffCalculator.Calculate(@base, head);
+
+        var lib = await Assert.That(result.Projects).HasSingleItem(p => p.Path == "src/Lib/Lib.csproj");
+        await Assert.That(lib.State).IsEqualTo(ProjectState.Unchanged);
+    }
+
+    [Test]
     public async Task IgnoreProject_SupportsGlobPattern()
     {
         var @base = BuildSnapshot("abc",
