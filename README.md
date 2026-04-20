@@ -53,34 +53,36 @@ delta-build diff --base snapshot.json
 
 ## Output Formats
 
-| Format  | Description                                     | Example                                                             |
-|---------|-------------------------------------------------|---------------------------------------------------------------------|
-| `plain` | One project path per line (default)             | `delta-build diff --base main`                                      |
-| `json`  | JSON array with project paths and states        | `delta-build diff --base main --format json`                        |
-| `sln`   | Visual Studio solution file (requires --output) | `delta-build diff --base main --format sln --output affected.sln`   |
-| `slnx`  | XML-based solution file (requires --output)     | `delta-build diff --base main --format slnx --output affected.slnx` |
+| Format      | Description                                                | Example                                                                  |
+|-------------|------------------------------------------------------------|--------------------------------------------------------------------------|
+| `plain`     | One project path per line (default)                        | `delta-build diff --base main`                                           |
+| `json`      | JSON array with project paths and states                   | `delta-build diff --base main --format json`                             |
+| `sln`       | Visual Studio solution file (requires --output)            | `delta-build diff --base main --format sln --output affected.sln`        |
+| `slnx`      | XML-based solution file (requires --output)                | `delta-build diff --base main --format slnx --output affected.slnx`      |
+| `traversal` | Microsoft.Build.Traversal project file (requires --output) | `delta-build diff --base main --format traversal --output affected.proj` |
 
 ## Options
 
-| Flag                         | Description                                                                                                                                       | Default       |
-|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|---------------|
-| `--base <ref>`               | Commit, branch, tag, or snapshot file to compare against (use - to read from stdin)                                                               | Required      |
-| `--head <ref>`               | Commit, branch, tag, or snapshot file to compare to, (use - to read from stdin)                                                                   | `HEAD`        |
-| `-e, --entrypoint <path>`    | Solution or project file(s) to analyze                                                                                                            | Auto-discover |
-| `--include-affected`         | Include projects depending on changed code                                                                                                        | `true`        |
-| `--include-modified`         | Include projects with direct file changes                                                                                                         | `true`        |
-| `--include-added`            | Include new projects                                                                                                                              | `true`        |
-| `--include-removed`          | Include deleted projects                                                                                                                          | `false`       |
-| `--include-unchanged`        | Include unchanged projects                                                                                                                        | `false`       |
-| `--include-dependencies`     | For each included project, also include its transitive dependencies. See [Solution File Configuration](docs/solution-file-configuration.md).      | `false`       |
-| `--ignore <pattern>`         | Exclude files matching a glob pattern from the diff. Repeatable.                                                                                  |               |
-| `--ignore-project <pattern>` | Exclude projects matching a glob pattern. Treated as unchanged and won't cause dependents to be affected. Repeatable.                             |               |
-| `--explain`                  | Render a colored tree view to stderr                                                                                                              | `false`       |
-| `--detailed`                 | When combined with --explain prints more detailed view of diff to stderr                                                                          | `false`       |
-| `--format <format>`          | Output format: `plain`, `json`, `sln`, `slnx`                                                                                                     | `plain`       |
-| `--output <path>`            | Write output to file                                                                                                                              | stdout        |
-| `--exit-code-on-empty`       | Exit code to return when no projects are outputted                                                                                                | `0`           |
-| `--cache <path>`             | Directory to cache build graph snapshots in. Cached snapshots are reused across runs to avoid redundant worktree builds for commits already seen. |               |
+| Flag                                        | Description                                                                                                                                       | Default       |
+|---------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|---------------|
+| `--base <ref>`                              | Commit, branch, tag, or snapshot file to compare against (use - to read from stdin)                                                               | Required      |
+| `--head <ref>`                              | Commit, branch, tag, or snapshot file to compare to, (use - to read from stdin)                                                                   | `HEAD`        |
+| `-e, --entrypoint <path>`                   | Solution or project file(s) to analyze                                                                                                            | Auto-discover |
+| `--include-affected`                        | Include projects depending on changed code                                                                                                        | `true`        |
+| `--include-modified`                        | Include projects with direct file changes                                                                                                         | `true`        |
+| `--include-added`                           | Include new projects                                                                                                                              | `true`        |
+| `--include-removed`                         | Include deleted projects                                                                                                                          | `false`       |
+| `--include-unchanged`                       | Include unchanged projects                                                                                                                        | `false`       |
+| `--include-dependencies`                    | For each included project, also include its transitive dependencies. See [Solution File Configuration](docs/solution-file-configuration.md).      | `false`       |
+| `--ignore <pattern>`                        | Exclude files matching a glob pattern from the diff. Repeatable.                                                                                  |               |
+| `--ignore-project <pattern>`                | Exclude projects matching a glob pattern. Treated as unchanged and won't cause dependents to be affected. Repeatable.                             |               |
+| `--explain`                                 | Render a colored tree view to stderr                                                                                                              | `false`       |
+| `--detailed`                                | When combined with --explain prints more detailed view of diff to stderr                                                                          | `false`       |
+| `--format <format>`                         | Output format: `plain`, `json`, `sln`, `slnx`, `traversal`                                                                                        | `plain`       |
+| `--microsoft-build-traversal-version <ver>` | Version of the Microsoft.Build.Traversal SDK to embed in the generated project file. Only applies to `traversal` format.                          |               |
+| `--output <path>`                           | Write output to file                                                                                                                              | stdout        |
+| `--exit-code-on-empty`                      | Exit code to return when no projects are outputted                                                                                                | `0`           |
+| `--cache <path>`                            | Directory to cache build graph snapshots in. Cached snapshots are reused across runs to avoid redundant worktree builds for commits already seen. |               |
 
 ### `snapshot` - Save a build graph snapshot
 

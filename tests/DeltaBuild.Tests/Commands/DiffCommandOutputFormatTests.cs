@@ -146,6 +146,55 @@ public sealed class DiffCommandOutputFormatTests : IDisposable
     }
 
     [Test]
+    public async Task Traversal_WritesTraversalProjectToOutputFile(CancellationToken cancellationToken)
+    {
+        var outputFile = Path.Combine(_repo.WorkingDirectory, "affected.proj");
+        try
+        {
+            var result = await BuildApp().RunAsync(
+                ["diff", "--base", _baseCommit, "--format", "traversal", "--output", outputFile],
+                cancellationToken);
+
+            await Assert.That(result.ExitCode).IsEqualTo(0);
+            await VerifyXml(await File.ReadAllTextAsync(outputFile, cancellationToken));
+        }
+        finally
+        {
+            File.Delete(outputFile);
+        }
+    }
+
+    [Test]
+    public async Task Traversal_WithVersion_IncludesVersionInSdkAttribute(CancellationToken cancellationToken)
+    {
+        var outputFile = Path.Combine(_repo.WorkingDirectory, "affected.proj");
+        try
+        {
+            var result = await BuildApp().RunAsync(
+                ["diff", "--base", _baseCommit, "--format", "traversal", "--output", outputFile,
+                    "--microsoft-build-traversal-version", "3.0.3"],
+                cancellationToken);
+
+            await Assert.That(result.ExitCode).IsEqualTo(0);
+            await VerifyXml(await File.ReadAllTextAsync(outputFile, cancellationToken));
+        }
+        finally
+        {
+            File.Delete(outputFile);
+        }
+    }
+
+    [Test]
+    public async Task Traversal_Fails_WhenNoOutputFileSpecified(CancellationToken cancellationToken)
+    {
+        var result = await BuildApp().RunAsync(
+            ["diff", "--base", _baseCommit, "--format", "traversal"],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsNotEqualTo(0);
+    }
+
+    [Test]
     public async Task Output_OverwritesExistingFile_WhenOverwriteSpecified(CancellationToken cancellationToken)
     {
         var outputFile = Path.Combine(_repo.WorkingDirectory, "affected.sln");
