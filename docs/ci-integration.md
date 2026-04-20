@@ -23,7 +23,7 @@ jobs:
       - name: Find affected projects
         id: diff
         continue-on-error: true
-        run: delta-build diff --base ${{ github.event.pull_request.base.sha }} --output diff.sln
+        run: delta-build diff --base ${{ github.event.pull_request.base.sha }} --output diff.sln --include-dependencies
 
       - name: Build affected projects
         if: steps.diff.outcome == 'success'
@@ -69,7 +69,7 @@ jobs:
       - name: Find affected projects
         id: diff
         continue-on-error: true
-        run: delta-build diff --base ${{ github.event.pull_request.base.sha }} --cache .delta-build-cache --output diff.sln
+        run: delta-build diff --base ${{ github.event.pull_request.base.sha }} --cache .delta-build-cache --output diff.sln --include-dependencies
 
       - name: Build affected projects
         if: steps.diff.outcome == 'success'
@@ -95,7 +95,7 @@ steps:
   - script: git fetch --depth=1 origin $(System.PullRequest.TargetBranchName)
     displayName: Fetch base commit
 
-  - script: delta-build diff --base "$(System.PullRequest.TargetBranchName)" --output diff.sln
+  - script: delta-build diff --base "$(System.PullRequest.TargetBranchName)" --output diff.sln --include-dependencies
     displayName: Find affected projects
     continueOnError: true
     name: diff
@@ -138,7 +138,7 @@ steps:
       path: .delta-build-cache
     displayName: Restore snapshot cache
 
-  - script: delta-build diff --base $(BaseSha) --cache .delta-build-cache --output diff.sln
+  - script: delta-build diff --base $(BaseSha) --cache .delta-build-cache --output diff.sln --include-dependencies
     displayName: Find affected projects
     continueOnError: true
     name: diff

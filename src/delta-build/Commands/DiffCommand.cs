@@ -1,4 +1,3 @@
-using System.Collections.Frozen;
 using System.ComponentModel;
 using System.Diagnostics;
 
@@ -249,40 +248,11 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
 
         var ignore = settings.Ignore.Length > 0 ? new GlobMatcher(settings.Ignore) : null;
         var ignoreProject = settings.IgnoreProject.Length > 0 ? new GlobMatcher(settings.IgnoreProject) : null;
-        var diff = DiffCalculator.Calculate(baseSnapshot, headSnapshot, ignore, ignoreProject);
+        var diff = DiffCalculator.Calculate(baseSnapshot, headSnapshot, ignore, ignoreProject, settings.IncludeDependencies);
 
         var outputProjects = diff.Projects
             .Where(it => ShouldInclude(it, settings))
             .ToList();
-
-        if (settings.IncludeDependencies && outputProjects.Count > 0)
-        {
-            var headProjectsByPath = headSnapshot.Projects.ToFrozenDictionary(p => p.Path);
-            var includedPaths = outputProjects.Select(p => p.Path).ToHashSet();
-            var toExpand = new Queue<string>(includedPaths);
-            while (toExpand.Count > 0)
-            {
-                var path = toExpand.Dequeue();
-                if (!headProjectsByPath.TryGetValue(path, out var project))
-                {
-                    continue;
-                }
-                foreach (var dep in project.ProjectReferences)
-                {
-                    if (includedPaths.Add(dep))
-                        toExpand.Enqueue(dep);
-                }
-            }
-
-            if (includedPaths.Count > outputProjects.Count)
-            {
-                var alreadyIncluded = outputProjects.Select(p => p.Path).ToHashSet();
-                outputProjects = diff.Projects
-                    .Where(p => includedPaths.Contains(p.Path))
-                    .Select(p => alreadyIncluded.Contains(p.Path) ? p : p with { State = ProjectState.Dependency })
-                    .ToList();
-            }
-        }
 
         await using (var output = settings.Output?.Create() ?? _stdout.OpenStream())
         {
@@ -357,6 +327,7 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
             ProjectState.Modified when settings.IncludeModified => true,
             ProjectState.Removed when settings.IncludeRemoved => true,
             ProjectState.Unchanged when settings.IncludeUnchanged => true,
+            ProjectState.Dependency => true,
             _ => false
         };
     }

@@ -9,6 +9,7 @@ Inspired by [dotnet-affected](https://github.com/leonardochaia/dotnet-affected).
 - [CI Integration](docs/ci-integration.md) — GitHub Actions and Azure DevOps examples
 - [Shallow Clones](docs/shallow-clones.md) — handling shallow git clones in CI
 - [NuGet Package Tracking](docs/nuget-package-tracking.md) — fine-grained package change detection with lock files
+- [Solution File Configuration](docs/solution-file-configuration.md) — ensuring correct build configuration propagates to dependencies
 
 ## How it works
 
@@ -70,6 +71,7 @@ delta-build diff --base snapshot.json
 | `--include-added`            | Include new projects                                                                                                                              | `true`        |
 | `--include-removed`          | Include deleted projects                                                                                                                          | `false`       |
 | `--include-unchanged`        | Include unchanged projects                                                                                                                        | `false`       |
+| `--include-dependencies`     | For each included project, also include its transitive dependencies. See [Solution File Configuration](docs/solution-file-configuration.md).      | `false`       |
 | `--ignore <pattern>`         | Exclude files matching a glob pattern from the diff. Repeatable.                                                                                  |               |
 | `--ignore-project <pattern>` | Exclude projects matching a glob pattern. Treated as unchanged and won't cause dependents to be affected. Repeatable.                             |               |
 | `--explain`                  | Render a colored tree view to stderr                                                                                                              | `false`       |

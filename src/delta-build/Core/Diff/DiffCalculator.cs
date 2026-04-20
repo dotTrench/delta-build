@@ -10,7 +10,8 @@ public static class DiffCalculator
         Snapshot baseSnapshot,
         Snapshot headSnapshot,
         GlobMatcher? ignore = null,
-        GlobMatcher? ignoreProject = null
+        GlobMatcher? ignoreProject = null,
+        bool includeDependencies = false
     )
     {
         var baseProjects = baseSnapshot.Projects.ToFrozenDictionary(it => it.Path);
@@ -86,6 +87,24 @@ public static class DiffCalculator
             results[project] = affectedBy.Count > 0
                 ? new ProjectDiffResult(project, ProjectState.Affected, affectedBy, fileDiffs)
                 : new ProjectDiffResult(project, ProjectState.Unchanged, [], fileDiffs);
+        }
+
+        if (includeDependencies)
+        {
+            var toExpand = new Queue<string>(results.Keys.Where(p => results[p].State is not ProjectState.Unchanged));
+            while (toExpand.Count > 0)
+            {
+                var path = toExpand.Dequeue();
+                if (!headProjects.TryGetValue(path, out var project)) continue;
+                foreach (var dep in project.ProjectReferences)
+                {
+                    if (results.TryGetValue(dep, out var existing) && existing.State is ProjectState.Unchanged)
+                    {
+                        results[dep] = existing with { State = ProjectState.Dependency };
+                        toExpand.Enqueue(dep);
+                    }
+                }
+            }
         }
 
         var projects = results.Values
