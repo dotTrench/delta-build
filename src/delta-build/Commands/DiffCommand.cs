@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.ComponentModel;
 using System.Diagnostics;
 
@@ -65,6 +66,14 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
         [DefaultValue(true)]
         [Description("Include projects with an upstream dependency that was modified or added.")]
         public bool IncludeAffected { get; init; } = true;
+
+        [CommandOption("--include-dependencies")]
+        [DefaultValue(false)]
+        [Description(
+            "For each included project, also include all of its transitive project dependencies, even if they are unchanged. " +
+            "Useful when building with solution files, where dotnet does not propagate the build configuration to dependencies."
+        )]
+        public bool IncludeDependencies { get; init; }
 
         [CommandOption("--ignore <pattern>")]
         [Description(
@@ -245,6 +254,36 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
         var outputProjects = diff.Projects
             .Where(it => ShouldInclude(it, settings))
             .ToList();
+
+        if (settings.IncludeDependencies && outputProjects.Count > 0)
+        {
+            var headProjectsByPath = headSnapshot.Projects.ToFrozenDictionary(p => p.Path);
+            var includedPaths = outputProjects.Select(p => p.Path).ToHashSet();
+            var toExpand = new Queue<string>(includedPaths);
+            while (toExpand.Count > 0)
+            {
+                var path = toExpand.Dequeue();
+                if (!headProjectsByPath.TryGetValue(path, out var project))
+                {
+                    continue;
+                }
+                foreach (var dep in project.ProjectReferences)
+                {
+                    if (includedPaths.Add(dep))
+                        toExpand.Enqueue(dep);
+                }
+            }
+
+            if (includedPaths.Count > outputProjects.Count)
+            {
+                var alreadyIncluded = outputProjects.Select(p => p.Path).ToHashSet();
+                outputProjects = diff.Projects
+                    .Where(p => includedPaths.Contains(p.Path))
+                    .Select(p => alreadyIncluded.Contains(p.Path) ? p : p with { State = ProjectState.Dependency })
+                    .ToList();
+            }
+        }
+
         await using (var output = settings.Output?.Create() ?? _stdout.OpenStream())
         {
             await formatter.FormatAsync(outputProjects, output, cancellationToken);

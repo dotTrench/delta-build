@@ -19,6 +19,7 @@ public enum ProjectState
     Removed = 2,
     Modified = 3,
     Affected = 4,
+    Dependency = 5,
 }
 
 public record ProjectDiffResult(

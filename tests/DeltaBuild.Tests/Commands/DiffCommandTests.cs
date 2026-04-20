@@ -636,6 +636,142 @@ public sealed class DiffCommandTests : IDisposable
     }
 
     [Test]
+    public async Task IncludeDependencies_IncludesUnchangedDirectDependency_WhenDependentIsModified(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Lib/Lib.csproj")
+            .CreateCsproj("src/App/App.csproj", x => x.AddItem("ProjectReference", @"../Lib/Lib.csproj"))
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        await _repo.WriteFileAsync("src/App/Foo.cs", "public class Foo {}", cancellationToken);
+        _repo.Commit("Modify App");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit, "--include-dependencies", "--format", "json"],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        var projects = JsonSerializer.Deserialize<List<ProjectDiffResult>>(stdout.GetString(), JsonFormatter.Options)!;
+
+        var app = await Assert.That(projects).HasSingleItem(p => p.Path == "src/App/App.csproj");
+        await Assert.That(app.State).IsEqualTo(ProjectState.Modified);
+
+        var lib = await Assert.That(projects).HasSingleItem(p => p.Path == "src/Lib/Lib.csproj");
+        await Assert.That(lib.State).IsEqualTo(ProjectState.Dependency);
+    }
+
+    [Test]
+    public async Task IncludeDependencies_IncludesTransitiveDependencies(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .CreateCsproj("src/Lib/Lib.csproj", x => x.AddItem("ProjectReference", @"../Core/Core.csproj"))
+            .CreateCsproj("src/App/App.csproj", x => x.AddItem("ProjectReference", @"../Lib/Lib.csproj"))
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        await _repo.WriteFileAsync("src/App/Foo.cs", "public class Foo {}", cancellationToken);
+        _repo.Commit("Modify App");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit, "--include-dependencies"],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        var lines = stdout.GetLines().ToList();
+
+        await Assert.That(lines).Contains("src/App/App.csproj");
+        await Assert.That(lines).Contains("src/Lib/Lib.csproj");
+        await Assert.That(lines).Contains("src/Core/Core.csproj");
+    }
+
+    [Test]
+    public async Task IncludeDependencies_PreservesTopologicalOrder(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .CreateCsproj("src/App/App.csproj", x => x.AddItem("ProjectReference", @"../Core/Core.csproj"))
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        await _repo.WriteFileAsync("src/App/Foo.cs", "public class Foo {}", cancellationToken);
+        _repo.Commit("Modify App");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit, "--include-dependencies"],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        var lines = stdout.GetLines().ToList();
+
+        await Assert.That(lines.Count).IsEqualTo(2);
+        await Assert.That(lines[0]).IsEqualTo("src/Core/Core.csproj");
+        await Assert.That(lines[1]).IsEqualTo("src/App/App.csproj");
+    }
+
+    [Test]
+    public async Task IncludeDependencies_DoesNotDuplicate_WhenDependencyAlreadyModified(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Core/Core.csproj")
+            .CreateCsproj("src/App/App.csproj", x => x.AddItem("ProjectReference", @"../Core/Core.csproj"))
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        await _repo.WriteFileAsync("src/App/Foo.cs", "public class Foo {}", cancellationToken);
+        await _repo.WriteFileAsync("src/Core/Bar.cs", "public class Bar {}", cancellationToken);
+        _repo.Commit("Modify App and Core");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit, "--include-dependencies", "--format", "json"],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        var projects = JsonSerializer.Deserialize<List<ProjectDiffResult>>(stdout.GetString(), JsonFormatter.Options)!;
+
+        await Assert.That(projects.Count).IsEqualTo(2);
+
+        var app = await Assert.That(projects).HasSingleItem(p => p.Path == "src/App/App.csproj");
+        await Assert.That(app.State).IsEqualTo(ProjectState.Modified);
+
+        // Core was already Modified — it should keep Modified, not be downgraded to Dependency
+        var core = await Assert.That(projects).HasSingleItem(p => p.Path == "src/Core/Core.csproj");
+        await Assert.That(core.State).IsEqualTo(ProjectState.Modified);
+    }
+
+    [Test]
+    public async Task DoesNotIncludeDependencies_ByDefault(CancellationToken cancellationToken)
+    {
+        _repo
+            .CreateCsproj("src/Lib/Lib.csproj")
+            .CreateCsproj("src/App/App.csproj", x => x.AddItem("ProjectReference", @"../Lib/Lib.csproj"))
+            .Commit("Initial commit");
+
+        var baseCommit = _repo.GetCurrentCommit();
+
+        await _repo.WriteFileAsync("src/App/Foo.cs", "public class Foo {}", cancellationToken);
+        _repo.Commit("Modify App");
+
+        var stdout = new InMemoryStandardOutput();
+        var result = await BuildApp(stdout).RunAsync(
+            ["diff", "--base", baseCommit],
+            cancellationToken);
+
+        await Assert.That(result.ExitCode).IsEqualTo(0);
+        var line = await Assert.That(stdout.GetLines()).HasSingleItem();
+        await Assert.That(line).IsEqualTo("src/App/App.csproj");
+    }
+
+    [Test]
     public async Task DoesNotLeaveWorktreesOrBranches_AfterDiff(CancellationToken cancellationToken)
     {
         _repo
