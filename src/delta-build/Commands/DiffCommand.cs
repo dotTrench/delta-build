@@ -106,9 +106,14 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
             "plain: newline-separated project paths. " +
             "json: JSON array with project paths and states. " +
             "sln: Visual Studio solution file containing the affected projects (requires --output). " +
-            "slnx: XML-based solution file containing the affected projects (requires --output)."
+            "slnx: XML-based solution file containing the affected projects (requires --output). " +
+            "traversal: Microsoft.Build.Traversal project file containing the affected projects (requires --output)."
         )]
         public OutputFormat? Format { get; init; }
+
+        [CommandOption("--traversal-version")]
+        [Description("Version of the Microsoft.Build.Traversal SDK to use in the generated traversal project file. Only applies when using traversal format.")]
+        public string? MicrosoftBuildTraversalVersion { get; init; }
 
         [CommandOption("--output <path>")]
         [Description(
@@ -138,7 +143,8 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
             Plain,
             Json,
             Sln,
-            Slnx
+            Slnx,
+            Traversal
         }
 
 
@@ -149,9 +155,9 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
                 return ValidationResult.Error("--output already exists, use --overwrite to overwrite.");
             }
 
-            if (Format is OutputFormat.Slnx or OutputFormat.Sln && Output is null)
+            if (Format is OutputFormat.Slnx or OutputFormat.Sln or OutputFormat.Traversal && Output is null)
             {
-                return ValidationResult.Error("--output is required when using sln or slnx format.");
+                return ValidationResult.Error("--output is required when using sln, slnx, or traversal format.");
             }
 
             if (Base == "-" && Head == "-")
@@ -299,9 +305,14 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
             ),
             Settings.OutputFormat.Slnx => new SolutionFormatter(
                 settings.Output ??
-                throw new InvalidOperationException("No output file specified while using slnx format"),
+                throw new UnreachableException("No output file specified while using slnx format"),
                 repoWorkingDirectory,
                 true
+            ),
+            Settings.OutputFormat.Traversal => new TraversalFormatter(
+                settings.Output ?? throw new UnreachableException("No output file specified while using traversal format"),
+                repoWorkingDirectory,
+                settings.MicrosoftBuildTraversalVersion
             ),
             _ => throw new UnreachableException()
         };
@@ -314,6 +325,7 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
             ".json" => Settings.OutputFormat.Json,
             ".sln" => Settings.OutputFormat.Sln,
             ".slnx" => Settings.OutputFormat.Slnx,
+            ".proj" => Settings.OutputFormat.Traversal,
             _ => Settings.OutputFormat.Plain
         };
     }
