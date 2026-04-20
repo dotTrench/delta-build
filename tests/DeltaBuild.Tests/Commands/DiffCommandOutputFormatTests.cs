@@ -172,7 +172,7 @@ public sealed class DiffCommandOutputFormatTests : IDisposable
         {
             var result = await BuildApp().RunAsync(
                 ["diff", "--base", _baseCommit, "--format", "traversal", "--output", outputFile,
-                    "--microsoft-build-traversal-version", "3.0.3"],
+                    "--traversal-version", "3.0.3"],
                 cancellationToken);
 
             await Assert.That(result.ExitCode).IsEqualTo(0);
@@ -192,6 +192,25 @@ public sealed class DiffCommandOutputFormatTests : IDisposable
             cancellationToken);
 
         await Assert.That(result.ExitCode).IsNotEqualTo(0);
+    }
+
+    [Test]
+    public async Task Traversal_InfersFormatFromExtension(CancellationToken cancellationToken)
+    {
+        var outputFile = Path.Combine(_repo.WorkingDirectory, "affected.proj");
+        try
+        {
+            var result = await BuildApp().RunAsync(
+                ["diff", "--base", _baseCommit, "--output", outputFile],
+                cancellationToken);
+
+            await Assert.That(result.ExitCode).IsEqualTo(0);
+            await VerifyXml(await File.ReadAllTextAsync(outputFile, cancellationToken));
+        }
+        finally
+        {
+            File.Delete(outputFile);
+        }
     }
 
     [Test]
