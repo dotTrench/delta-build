@@ -33,7 +33,7 @@
 
     <PackageReference Include="Microsoft.Build.Locator" Version="1.11.2"/>
 
-    <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" Version="10.0.6"/>
+    <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" Version="10.0.7"/>
 
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.203">
       <PrivateAssets>all</PrivateAssets>
