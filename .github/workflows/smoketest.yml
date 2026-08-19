@@ -59,7 +59,7 @@ jobs:
         run: ./eng/install-local.sh 0.0.0-${GITHUB_SHA::7}
 
       - name: Restore snapshot cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: .delta-build-cache
           key: delta-build-snapshots-${{ github.event.pull_request.base.sha }}
