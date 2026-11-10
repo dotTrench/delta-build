@@ -18,7 +18,9 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: |
+            10.0.x
+            11.0.x
 
       - name: Install delta-build
         run: ./eng/install-local.sh 0.0.0-${GITHUB_SHA::7}
@@ -34,7 +36,9 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: |
+            10.0.x
+            11.0.x
 
       - name: Install delta-build
         run: ./eng/install-local.sh 0.0.0-${GITHUB_SHA::7}
@@ -53,7 +57,9 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: |
+            10.0.x
+            11.0.x
 
       - name: Install delta-build
         run: ./eng/install-local.sh 0.0.0-${GITHUB_SHA::7}
