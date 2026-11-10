@@ -185,7 +185,7 @@ public sealed class DiffCommand : AsyncCommand<DiffCommand.Settings>
         _stdin = stdin;
     }
 
-    protected override async Task<int> ExecuteAsync(
+    public override async Task<int> ExecuteAsync(
         CommandContext context,
         Settings settings,
         CancellationToken cancellationToken
